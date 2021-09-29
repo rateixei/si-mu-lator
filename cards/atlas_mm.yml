@@ -1,0 +1,31 @@
+detector:
+  name: ATLASMicroMegas
+  det_width_t: 250 ## ns window
+  det_n_t_seg: 25 ## window segmentation
+  #if I wanted, I could specify these things per plane
+  det_width_x: 10
+  det_width_y: 10
+  det_n_x_seg: 10
+  det_n_y_seg: 0
+  det_t_res: 5 ## timing resolution in ns
+  planes:
+    plane_1:
+      z: 1
+    plane_2:
+      z: 2
+    plane_3:
+      z: 3
+      tilt: 1.5
+    plane_4:
+      z: 4
+      tilt: -1.5
+    plane_5:
+      z: 5
+      tilt: 1.5
+    plane_6:
+      z: 6
+      tilt: 1.5
+    plane_7:
+      z: 7
+    plane_8:
+      z: 8
