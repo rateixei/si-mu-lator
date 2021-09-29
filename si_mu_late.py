@@ -40,7 +40,7 @@ def event(det, confs):
     
 
 def main():
-    parser = argparse.ArgumentParser(description='Si-μ-late')
+    parser = argparse.ArgumentParser(description='Si-MU-late')
     
     # general and required
     parser.add_argument('-d', '--detector', dest='detcard', type=str, required=True,
