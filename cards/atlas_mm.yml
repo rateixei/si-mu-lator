@@ -15,16 +15,16 @@ detector:
       z: 2
     plane_3:
       z: 3
-      tilt: 1.5
+      tilt: 0.0261799 ## 1.5 in degree
     plane_4:
       z: 4
-      tilt: -1.5
+      tilt: -0.0261799
     plane_5:
       z: 5
-      tilt: 1.5
+      tilt: 0.0261799
     plane_6:
       z: 6
-      tilt: 1.5
+      tilt: -0.0261799
     plane_7:
       z: 7
     plane_8:

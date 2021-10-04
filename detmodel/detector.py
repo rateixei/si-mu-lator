@@ -1,8 +1,11 @@
 import numpy as np
 import sympy
-import elements
 import yaml
 import sys
+from detmodel.hit import Hit
+from detmodel.signal import Signal
+from detmodel.muon import Muon
+from detmodel.plane import Plane
 
 ## ToDo:
 ### Add print method to summarize detector
@@ -16,13 +19,14 @@ class Detector:
         self.mymu = 0
 
     def reset_planes(self):
-        print("-- Resetting planes --")
-        for p in self.planes:
-            p.clear_hits()
+#         print("-- Resetting planes --")
+        if len(self.planes) > 0:
+            for p in self.planes:
+                p.clear_hits()
 
     def add_muon(self, mu_x, mu_y, mu_theta, mu_phi=0, mu_time=0):
-        print("-- Adding muon --")
-        self.mymu = elements.Muon(x=mu_x, y=mu_y, theta=mu_theta, phi=mu_phi, time=mu_time)
+#         print("-- Adding muon --")
+        self.mymu = Muon(x=mu_x, y=mu_y, theta=mu_theta, phi=mu_phi, time=mu_time)
 
         mu_res = []
         for p in self.planes:
@@ -32,7 +36,7 @@ class Detector:
         return mu_res
 
     def add_noise(self, noise_type, noise_rate_per_module):
-        print("-- Adding noise --")
+#         print("-- Adding noise --")
         
         '''
         p_width_t is the time window in which to integrate the signal (in nano seconds)
@@ -55,7 +59,7 @@ class Detector:
             print("TBI")
 
     def get_signals(self):
-        print("-- Getting signals --")
+#         print("-- Getting signals --")
         signals = []
         for p in self.planes:
             p_sig = p.return_signal()
@@ -126,7 +130,7 @@ class Detector:
                 sys.exit()
 
 
-            p_i = elements.Plane(z=p_z,
+            p_i = Plane(z=p_z,
             width_x=p_width_x, width_y=p_width_y, width_t=p_width_t,
             n_x_seg=p_n_x_seg, n_y_seg=p_n_y_seg, n_t_seg=p_n_t_seg,
             x_res=p_x_res, y_rex=p_y_res, z_res=p_z_res, t_res=p_t_res,
