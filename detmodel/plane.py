@@ -195,8 +195,8 @@ class Plane:
         
         if self.seg_lines['x'][hit_hash_ix].is_sig and self.seg_lines['y'][hit_hash_iy].is_sig:
             if this_hit.is_muon:
-                self.seg_lines['x'][hit_hash_ix].is_muon = True
-                self.seg_lines['y'][hit_hash_iy].is_muon = True
+                self.seg_lines['x'][hit_hash_ix].sig.is_muon = True
+                self.seg_lines['y'][hit_hash_iy].sig.is_muon = True
                 return None
         else:
             isig = Signal( hash_seg_line_x=hit_hash_ix, hash_seg_line_y=hit_hash_iy, 
