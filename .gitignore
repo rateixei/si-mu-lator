@@ -1,0 +1,3 @@
+*.dat
+*.ipynb_checkpoints*
+*__pycache__*
