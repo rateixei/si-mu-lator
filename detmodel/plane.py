@@ -228,16 +228,4 @@ class Plane:
 
         out_signals = self.hit_processor()
         
-        out_dict = {}
-        
-        if len(out_signals) < 1:
-            return out_dict
-        else:
-            out_dict = dict.fromkeys(out_signals[0])
-            
-            for kk in out_dict: 
-                out_dict[kk] = []            
-                for osig in out_signals:
-                    out_dict[kk].append( float(osig[kk]) )
-        
         return out_signals

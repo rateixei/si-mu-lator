@@ -43,6 +43,7 @@ class Signal:
                    'projY_at_topend_y': float(y_topend.y),
                    'projY_at_middle_x': float(y_middle.x),
                    'projY_at_middle_y': float(y_middle.y),
+                   'z': plane.z,
                    'time': self.time,
                    'is_muon': self.is_muon
                    }

@@ -4,9 +4,13 @@ from detmodel.detector import Detector
 
 import multiprocessing
 import tqdm
+import time
+
+import h5py
+
+import pandas
 
 my_configs = 0
-
 
 parser = argparse.ArgumentParser(description='Si-MU-late')
     
@@ -15,6 +19,8 @@ parser.add_argument('-d', '--detector', dest='detcard', type=str, required=True,
                     help='Detector card')
 parser.add_argument('-n', '--nevents', dest='nevs', type=int, required=True,
                     help='Number of events')
+parser.add_argument('-o', '--outfile', dest='outf', type=str, required=True,
+                    help='Out h5 file')
     
 # muon simulation
 parser.add_argument('-m', '--addmuon', dest='ismu', action='store_true', default=False,
@@ -29,13 +35,20 @@ parser.add_argument('-a', '--muona', nargs=2, metavar=('muamin', 'muamax'),
 # background simulation
 parser.add_argument('-b', '--bkgrate', dest='bkgr', type=float, default=0,
                        help='Background rate (Hz) per module unit')
+
+# other
+parser.add_argument('-r', '--randomseed', dest='randseed', type=float, default=42,
+                       help='Set random seed')
     
 my_configs = parser.parse_args()
+
     
 my_detector = Detector()
 my_detector.read_card(my_configs.detcard)
 
 def run_event(iev):
+    np.random.seed(my_configs.randseed + iev)
+    
     my_detector.reset_planes()
     
     ## muon
@@ -59,27 +72,60 @@ def run_event(iev):
         my_detector.add_noise("constant", my_configs.bkgr)
     
     ## signals
-    return my_detector.get_signals()
+    return my_detector.get_signals(iev)
     
 
 def main():
     
     print("Running events...")
     
-    pool = multiprocessing.Pool(4)
+    ncpu = multiprocessing.cpu_count()
+    print(f"---> Using {ncpu} CPUs for parallelization")
+    
+    pool = multiprocessing.Pool(ncpu)
     pbar = tqdm.tqdm(total=my_configs.nevs)
 
     def update(*a):
         pbar.update()
 
+    results = []
     for i in range(pbar.total):
-        pool.apply_async(run_event, args=(i,), callback=update)
+        this_res = pool.apply_async(run_event, args=(i,), callback=update)
+        results.append(this_res)
         
     pool.close()
     pool.join()
+    
+    final_results = [ pandas.DataFrame(res.get()) for res in results ]
+
+    if len(final_results) < 1:
+        print("No results found...")
+        sys.exit()
+    
+    final_results = pandas.concat(final_results)
+    
+    final_results.to_hdf(my_configs.outf, 'signals')
+    
+#     print(final_results)
+#     pd = pandas.DataFrame(final_results)
+#     print(pd)
+#     final_results = np.concatenate(final_results)
+    
+#     ## transform dict
+#     transf_dict = {}
+#     for kk in final_results[0].keys():
+#         transf_dict[kk] = [ final_results[ir][kk] for ir in range(len(final_results)) ]
+
+#     print(transf_dict)
+    
+#     with h5py.File(my_configs.outf, 'w') as hf:
+#         hf.create_dataset("hits", data=transf_dict)
+#         print("Saved!")
+
 
 #     for i in range(my_configs.nevs):
 #         a = run_event(i)
+#         print(a)
 
 if __name__== "__main__" :
     main()

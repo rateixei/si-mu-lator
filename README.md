@@ -22,3 +22,8 @@ optional arguments:
   -b BKGR, --bkgrate BKGR
                         Background rate (Hz) per plane
 ```
+
+## Setup environment at SLAC
+```
+source init_sing.sh
+```

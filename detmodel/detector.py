@@ -17,6 +17,7 @@ class Detector:
         self.specs = {}
         self.planes = []
         self.mymu = 0
+        self.has_mu = 0
 
     def reset_planes(self):
 #         print("-- Resetting planes --")
@@ -26,6 +27,8 @@ class Detector:
 
     def add_muon(self, mu_x, mu_y, mu_theta, mu_phi=0, mu_time=0):
 #         print("-- Adding muon --")
+        self.has_mu = 1
+        self.muinit = {'x': mu_x, 'y': mu_y, 'theta': mu_theta, 'phi': mu_phi, 'time': mu_time}
         self.mymu = Muon(x=mu_x, y=mu_y, theta=mu_theta, phi=mu_phi, time=mu_time)
 
         mu_res = []
@@ -59,13 +62,26 @@ class Detector:
         else:
             print("TBI")
 
-    def get_signals(self):
+    def get_signals(self, iev=-1):
 #         print("-- Getting signals --")
         signals = []
-        for p in self.planes:
+        for ip,p in enumerate(self.planes):
             p_sig = p.return_signal()
             signals.append(p_sig)
-        return signals
+
+        out_dict = np.concatenate(signals).tolist()
+        if self.has_mu:
+            for od in out_dict:
+                od['mu_x'] = self.muinit['x']
+                od['mu_y'] = self.muinit['y']
+                od['mu_theta'] = self.muinit['theta']
+                od['mu_phi'] = self.muinit['phi']
+                od['mu_time'] = self.muinit['time']
+        if iev > -1:
+            for od in out_dict:
+                od['iev'] = iev
+        
+        return out_dict
 
     def read_card(self, detector_card):
         print("-- Reading card --")
