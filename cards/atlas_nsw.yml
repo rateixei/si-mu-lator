@@ -4,7 +4,7 @@
 ## Define 1 a.u = 22.8mm
 ## Detector starts at z = 6780mm ~300 a.u.
 ## So a detector box of 0.02 a.u x 0.02 a.u ~ 4 x 4 mm2
-## The strip pitch x in the MM is 0.4~0.45~0.002 a.u.
+## The strip pitch x in the MM is 0.4~0.45mm which is ~0.002 a.u.
 ## So in a box of 0.02 x 0.02 a.u^2, you have 10 x strips
 ####
 

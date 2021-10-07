@@ -221,11 +221,17 @@ class Plane:
             if isig_info is not None:
                 out_signals.append(isig_info)
 
-        return out_signals
-
-    
-    def return_signal(self):
-
-        out_signals = self.hit_processor()
+        n_sigs = len(out_signals)
+        n_props = len(out_signals[0])
+        sig_matrix = np.zeros( (n_sigs, n_props) )
         
-        return out_signals
+        if n_sigs < 1:
+            return sig_matrix
+        
+        for ns in range(n_sigs):
+            sig_matrix[ns][:] = list( out_signals[ns].values() )
+            
+        return (sig_matrix, list(out_signals[ns].keys()) )
+
+    def return_signal(self):
+        return self.hit_processor()

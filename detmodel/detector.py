@@ -65,23 +65,16 @@ class Detector:
     def get_signals(self, iev=-1):
 #         print("-- Getting signals --")
         signals = []
-        for ip,p in enumerate(self.planes):
-            p_sig = p.return_signal()
-            signals.append(p_sig)
-
-        out_dict = np.concatenate(signals).tolist()
-        if self.has_mu:
-            for od in out_dict:
-                od['mu_x'] = self.muinit['x']
-                od['mu_y'] = self.muinit['y']
-                od['mu_theta'] = self.muinit['theta']
-                od['mu_phi'] = self.muinit['phi']
-                od['mu_time'] = self.muinit['time']
-        if iev > -1:
-            for od in out_dict:
-                od['iev'] = iev
+        keys = []
         
-        return out_dict
+        for ip,p in enumerate(self.planes):
+            p_sig, p_keys = p.return_signal()
+            signals.append(p_sig)
+            if len(keys) == 0:
+                keys = p_keys[:]
+                
+        signals = np.concatenate(signals)
+        return (signals,keys)
 
     def read_card(self, detector_card):
         print("-- Reading card --")

@@ -25,27 +25,28 @@ def plot_det_volume(det, ax, draw_muon=False):
                       [-0.5*p.sizes['x'], 0.5*p.sizes['y'], pz]   ]
                 ]
         
-        ax.add_collection3d(Poly3DCollection(verts, facecolors='gray', linewidths=1, edgecolors='gray', alpha=.10))
+        ax.add_collection3d(Poly3DCollection(verts, facecolors='gray', linewidths=0, edgecolors='gray', alpha=.1))
         
         if 0.5*p.sizes['x'] > max_x: max_x = 0.5*p.sizes['x']
         if 0.5*p.sizes['y'] > max_y: max_y = 0.5*p.sizes['y']
         if pz > max_z: max_z = pz
             
-        for slx in p.seg_lines['x']:
+        for islx, slx in enumerate(p.seg_lines['x']):
 #             print(slx.line)
             
             inter_left  = list(slx.line.intersect( edges['left'] ))[0]
             inter_right = list(slx.line.intersect( edges['right'] ))[0]
             
             lcolor = 'gray'
-            alpha = 0.3
+            alpha = 0.2
             
             if slx.is_sig:
                 lcolor = 'C0'
-                alpha = 0.6
+                alpha = 0.7
                 if slx.sig.is_muon:
                     lcolor='green'
                     alpha = 1
+                    print("Found muon signal, plane ", ip, " xseg ", islx, " time ",  slx.sig.time )
             
             ax.plot3D (
                 xs=[ float(inter_left.x), float(inter_right.x) ],
@@ -64,8 +65,10 @@ def plot_det_volume(det, ax, draw_muon=False):
                 inter_bottom = list(sly.line.intersect( edges['bottom'] ))[0]
                 
                 lcolor = 'gray'
-                alpha = 0.3
+                alpha = 0.2
                 if slx.is_sig:
+                    lcolor = 'C0'
+                    alpha = 0.7
                     if slx.sig.is_muon:
                         lcolor='green'
                         alpha = 1

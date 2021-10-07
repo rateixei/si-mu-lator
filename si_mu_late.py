@@ -37,7 +37,7 @@ parser.add_argument('-b', '--bkgrate', dest='bkgr', type=float, default=0,
                        help='Background rate (Hz) per module unit')
 
 # other
-parser.add_argument('-r', '--randomseed', dest='randseed', type=float, default=42,
+parser.add_argument('-r', '--randomseed', dest='randseed', type=int, default=42,
                        help='Set random seed')
     
 my_configs = parser.parse_args()
@@ -52,6 +52,7 @@ def run_event(iev):
     my_detector.reset_planes()
     
     ## muon
+    mu_config = None
     if my_configs.ismu:
         mu_x = 0
         if my_configs.muonx[0] < my_configs.muonx[1]:
@@ -66,15 +67,62 @@ def run_event(iev):
             mu_a = np.random.uniform(low=my_configs.muona[0], high=my_configs.muona[1])
         
         my_detector.add_muon(mu_x=mu_x, mu_y=mu_y, mu_theta=mu_a, mu_phi=0, mu_time=0)
+        mu_config = [mu_x, mu_y, mu_a, 0, 0]
     
     ## background
     if my_configs.bkgr > 0:
         my_detector.add_noise("constant", my_configs.bkgr)
     
     ## signals
-    return my_detector.get_signals(iev)
+    sigs, keys = my_detector.get_signals(iev)
+    return (sigs, keys, mu_config)
     
 
+def make_signal_matrix(res):
+    
+    evs = []
+    max_sigs = np.max( [ iev.get()[0].shape[0] for iev in res ] )
+    out_matrix = np.zeros( ( len(res), max_sigs, 11 ) )
+    key = []
+    mu_configs = []
+    for iiev,iev in enumerate(res):
+        this_res, this_key, muconf = iev.get()
+        if len(key) == 0:
+            key = this_key[:]
+        this_shape = this_res.shape
+        out_matrix[iiev][ :this_shape[0], : ] = this_res
+        mu_configs.append(muconf)
+    
+    return(out_matrix, key, mu_configs)
+
+def make_event_dict(sig_mat, mu_configs):
+    
+    event_dict = {
+        'n_signals': [],
+        'n_mu_signals': [],
+        'mu_x': [],
+        'mu_y': [],
+        'mu_theta': [],
+        'mu_phi': [],
+        'mu_time': []
+    }
+    
+    for iev in range(sig_mat.shape[0]):
+        
+        ## number of signals with z > 0
+        event_dict['n_signals'].append( np.sum(sig_mat[iev,:,8] > 0) ) 
+        ## number of signals with is_muon == True
+        event_dict['n_mu_signals'].append( np.sum(sig_mat[iev,:,10] == True) ) 
+        ## injected mu x
+        event_dict['mu_x'].append( mu_configs[iev][0] )
+        event_dict['mu_y'].append( mu_configs[iev][1] )
+        event_dict['mu_theta'].append( mu_configs[iev][2] )
+        event_dict['mu_phi'].append( mu_configs[iev][3] )
+        event_dict['mu_time'].append( mu_configs[iev][4] )
+    
+    return event_dict
+    
+    
 def main():
     
     print("Running events...")
@@ -95,32 +143,21 @@ def main():
         
     pool.close()
     pool.join()
-    
-    final_results = [ pandas.DataFrame(res.get()) for res in results ]
 
-    if len(final_results) < 1:
+    if len(results) < 1:
         print("No results found...")
         sys.exit()
+  
+    sig_matrix, sig_keys, mu_confs = make_signal_matrix(results)
+    ev_dict = make_event_dict(sig_matrix, mu_confs)
     
-    final_results = pandas.concat(final_results)
-    
-    final_results.to_hdf(my_configs.outf, 'signals')
-    
-#     print(final_results)
-#     pd = pandas.DataFrame(final_results)
-#     print(pd)
-#     final_results = np.concatenate(final_results)
-    
-#     ## transform dict
-#     transf_dict = {}
-#     for kk in final_results[0].keys():
-#         transf_dict[kk] = [ final_results[ir][kk] for ir in range(len(final_results)) ]
-
-#     print(transf_dict)
-    
-#     with h5py.File(my_configs.outf, 'w') as hf:
-#         hf.create_dataset("hits", data=transf_dict)
-#         print("Saved!")
+    with h5py.File(my_configs.outf, 'w') as hf:
+        hf.create_dataset("signals", data=sig_matrix)
+        hf.create_dataset("signal_keys", data=np.array(mu_confs))
+        for kk in ev_dict:
+            hf.create_dataset('ev_'+kk, np.array(ev_dict[kk]))
+    print("Saved!")
+        
 
 
 #     for i in range(my_configs.nevs):
