@@ -62,13 +62,13 @@ class Detector:
         else:
             print("TBI")
 
-    def get_signals(self, iev=-1):
+    def get_signals(self, iev=-1, summary=False):
 #         print("-- Getting signals --")
         signals = []
         keys = []
         
         for ip,p in enumerate(self.planes):
-            p_sig, p_keys = p.return_signal()
+            p_sig, p_keys = p.return_signal(summary)
             signals.append(p_sig)
             if len(keys) == 0:
                 keys = p_keys[:]

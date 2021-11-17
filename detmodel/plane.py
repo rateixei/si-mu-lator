@@ -60,12 +60,12 @@ class Plane:
         for this_x_center in self.seg_mids['x']:
             this_p1 = sympy.Point3D(this_x_center, 0, self.z)
             this_p2 = sympy.Point3D(this_x_center + 0.5*width_y*np.tan(tilt), 0.5*width_y, self.z )
-            self.seg_lines['x'].append(Segment( sympy.Line3D(this_p1, this_p2), coord='x' ))
+            self.seg_lines['x'].append(Segment( sympy.Line3D(this_p1, this_p2), coord='x', z=self.z ))
             
         for this_y_center in self.seg_mids['y']:
             this_p1 = sympy.Point3D(0, this_y_center, self.z)
             this_p2 = sympy.Point3D(0.5*width_x, this_y_center, self.z )
-            self.seg_lines['y'].append(Segment( sympy.Line3D(this_p1, this_p2), coord='y' ))
+            self.seg_lines['y'].append(Segment( sympy.Line3D(this_p1, this_p2), coord='y', z=self.z ))
 
         ## keeping position resolution as 0 for now
         ## timing resolution of 5 BCs
@@ -192,23 +192,31 @@ class Plane:
         hit_hash_iy = np.argmin( [ yseg.line.distance(this_hit.point()) for yseg in self.seg_lines['y'] ] )
         
         ## if segment already has signal, skip (but set to muon if new signal is from muon)
-        
-        if self.seg_lines['x'][hit_hash_ix].is_sig and self.seg_lines['y'][hit_hash_iy].is_sig:
-            if this_hit.is_muon:
-                self.seg_lines['x'][hit_hash_ix].sig.is_muon = True
-                self.seg_lines['y'][hit_hash_iy].sig.is_muon = True
-                return None
-        else:
-            isig = Signal( hash_seg_line_x=hit_hash_ix, hash_seg_line_y=hit_hash_iy, 
+            
+        if self.seg_lines['x'][hit_hash_ix].is_sig == False or \
+            self.seg_lines['y'][hit_hash_iy].is_sig == False:
+            
+            isig = Signal( hash_seg_line_x=hit_hash_ix, hash_seg_line_y=hit_hash_iy, z=this_hit.z,
                           time=this_hit.time, is_muon=this_hit.is_muon )
             
             self.seg_lines['x'][hit_hash_ix].add_signal(isig)
             self.seg_lines['y'][hit_hash_iy].add_signal(isig)
             
             return isig.get_info_wrt_plane(self)
+    
+        else:
+            
+            if this_hit.is_muon:
+                if self.seg_lines['x'][hit_hash_ix].is_sig and \
+                    self.seg_lines['y'][hit_hash_iy].is_sig:
+                    
+                    self.seg_lines['x'][hit_hash_ix].sig.is_muon = True
+                    self.seg_lines['y'][hit_hash_iy].sig.is_muon = True
+
+            return None
 
 
-    def hit_processor(self):
+    def hit_processor(self, summary=False):
         ## decide on overlapping hits
         
         ## sorting hits by which one arrived first
@@ -216,6 +224,9 @@ class Plane:
         
         out_signals = []
         
+        if summary:
+            print("Total number of hits:", len(self.hits) )
+    
         for ihit in self.hits:
             isig_info = self.find_signal(ihit)
             if isig_info is not None:
@@ -233,5 +244,5 @@ class Plane:
             
         return (sig_matrix, list(out_signals[ns].keys()) )
 
-    def return_signal(self):
-        return self.hit_processor()
+    def return_signal(self, summary=False):
+        return self.hit_processor(summary)

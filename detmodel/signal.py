@@ -1,10 +1,12 @@
 import numpy as np
 import sympy
 import sys
+import copy
 
 class Segment:
-    def __init__(self, seg_line, coord):
+    def __init__(self, seg_line, coord, z):
         self.line=seg_line
+        self.z=z
         if 'x' not in coord and 'y' not in coord:
             print('Segment coord must be x or y')
             sys.exit()
@@ -19,13 +21,14 @@ class Segment:
         self.sig = None
         
     def add_signal(self,sig):
-        self.sig = sig
+        self.sig = copy.deepcopy(sig)
         self.is_sig = True
     
 class Signal:
-    def __init__(self, hash_seg_line_x, hash_seg_line_y, time, is_muon):
+    def __init__(self, hash_seg_line_x, hash_seg_line_y, z, time, is_muon):
         self.hash_seg_x = hash_seg_line_x
         self.hash_seg_y = hash_seg_line_y
+        self.z = z
         self.time = time
         self.is_muon = is_muon
         
@@ -52,3 +55,12 @@ class Signal:
             print(hit_dict)
         
         return hit_dict
+    
+    def print(self):
+        hit_info = 'Signal information:\n\t'
+        hit_info += f'hash_seg_x = {self.hash_seg_x}' + '\n\t'
+        hit_info += f'hash_seg_y = {self.hash_seg_y}' + '\n\t'
+        hit_info += f'z = {self.z}' + '\n\t'
+        hit_info += f'time = {self.time}' + '\n\t'
+        hit_info += f'is_muon = {self.is_muon}' + '\n'
+        print(hit_info)
