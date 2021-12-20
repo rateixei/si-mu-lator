@@ -155,7 +155,7 @@ def main():
         hf.create_dataset("signals", data=sig_matrix)
         hf.create_dataset("signal_keys", data=np.array(mu_confs))
         for kk in ev_dict:
-            hf.create_dataset('ev_'+kk, np.array(ev_dict[kk]))
+            hf.create_dataset('ev_'+kk, data=np.array(ev_dict[kk]) )
     print("Saved!")
         
 
