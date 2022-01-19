@@ -233,11 +233,12 @@ class Plane:
                 out_signals.append(isig_info)
 
         n_sigs = len(out_signals)
-        n_props = len(out_signals[0])
-        sig_matrix = np.zeros( (n_sigs, n_props) )
         
         if n_sigs < 1:
-            return sig_matrix
+            return None
+        
+        n_props = len(out_signals[0])
+        sig_matrix = np.zeros( (n_sigs, n_props) )
         
         for ns in range(n_sigs):
             sig_matrix[ns][:] = list( out_signals[ns].values() )

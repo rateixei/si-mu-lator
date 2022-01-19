@@ -68,13 +68,20 @@ class Detector:
         keys = []
         
         for ip,p in enumerate(self.planes):
-            p_sig, p_keys = p.return_signal(summary)
-            signals.append(p_sig)
-            if len(keys) == 0:
-                keys = p_keys[:]
+            p_return = p.return_signal(summary)
+            
+            if p_return is not None:
+                p_sig, p_keys = p_return
+                signals.append(p_sig)
                 
-        signals = np.concatenate(signals)
-        return (signals,keys)
+                if len(keys) == 0:
+                    keys = p_keys[:]
+
+        if len(signals) == 0:
+            return None
+        else:
+            signals = np.concatenate(signals)
+            return (signals,keys)
 
     def read_card(self, detector_card):
         print("-- Reading card --")

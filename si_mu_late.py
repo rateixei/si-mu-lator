@@ -74,8 +74,12 @@ def run_event(iev):
         my_detector.add_noise("constant", my_configs.bkgr)
     
     ## signals
-    sigs, keys = my_detector.get_signals(iev)
-    return (sigs, keys, mu_config)
+    sigs_keys = my_detector.get_signals(iev)
+    
+    if sigs_keys is not None:
+        return (sigs_keys[0], sigs_keys[1], mu_config)
+    else:
+        return None
     
 
 def make_signal_matrix(res):
@@ -114,11 +118,18 @@ def make_event_dict(sig_mat, mu_configs):
         ## number of signals with is_muon == True
         event_dict['n_mu_signals'].append( np.sum(sig_mat[iev,:,10] == True) ) 
         ## injected mu x
-        event_dict['mu_x'].append( mu_configs[iev][0] )
-        event_dict['mu_y'].append( mu_configs[iev][1] )
-        event_dict['mu_theta'].append( mu_configs[iev][2] )
-        event_dict['mu_phi'].append( mu_configs[iev][3] )
-        event_dict['mu_time'].append( mu_configs[iev][4] )
+        if mu_configs[iev] is not None:
+            event_dict['mu_x'].append( mu_configs[iev][0] )
+            event_dict['mu_y'].append( mu_configs[iev][1] )
+            event_dict['mu_theta'].append( mu_configs[iev][2] )
+            event_dict['mu_phi'].append( mu_configs[iev][3] )
+            event_dict['mu_time'].append( mu_configs[iev][4] )
+        else:
+            event_dict['mu_x'].append( -99 )
+            event_dict['mu_y'].append( -99 )
+            event_dict['mu_theta'].append( -99 )
+            event_dict['mu_phi'].append( -99 )
+            event_dict['mu_time'].append( -99 )
     
     return event_dict
     
@@ -139,7 +150,8 @@ def main():
     results = []
     for i in range(pbar.total):
         this_res = pool.apply_async(run_event, args=(i,), callback=update)
-        results.append(this_res)
+        if this_res is not None:
+            results.append(this_res)
         
     pool.close()
     pool.join()
