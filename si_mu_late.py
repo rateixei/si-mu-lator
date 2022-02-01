@@ -26,11 +26,11 @@ parser.add_argument('-o', '--outfile', dest='outf', type=str, required=True,
 parser.add_argument('-m', '--addmuon', dest='ismu', action='store_true', default=False,
                     help='Simulate muon')
 parser.add_argument('-x', '--muonx', nargs=2, metavar=('muxmin', 'muxmax'), 
-                    default=(0,0), help='Generated muon X')
+                    default=(0,0), type=float, help='Generated muon X')
 parser.add_argument('-y', '--muony', nargs=2, metavar=('muymin', 'muymax'), 
-                    default=(0,0), help='Generated muon Y')
+                    default=(0,0), type=float, help='Generated muon Y')
 parser.add_argument('-a', '--muona', nargs=2, metavar=('muamin', 'muamax'), 
-                    default=(0,0), help='Generated muon angle')
+                    default=(0,0), type=float, help='Generated muon angle')
     
 # background simulation
 parser.add_argument('-b', '--bkgrate', dest='bkgr', type=float, default=0,
@@ -163,7 +163,10 @@ def main():
     sig_matrix, sig_keys, mu_confs = make_signal_matrix(results)
     ev_dict = make_event_dict(sig_matrix, mu_confs)
     
-    with h5py.File(my_configs.outf, 'w') as hf:
+    out_file_name = my_configs.outf.replace('.h5', 
+                        f'_Rnd{my_configs.randseed}.h5')
+
+    with h5py.File(out_file_name, 'w') as hf:
         hf.create_dataset("signals", data=sig_matrix)
         hf.create_dataset("signal_keys", data=np.array(mu_confs))
         for kk in ev_dict:
