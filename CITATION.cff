@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Teixeira de Lima
+    given-names: Rafael
+    orcid: https://orcid.org/0000-0001-5545-6513
+title: "Si-μ-lator: muon trigger simplified simulation"
+version: 0.0.1
+date-released: 2022-01-01
