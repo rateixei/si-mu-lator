@@ -1,18 +1,10 @@
 import os
 import sys
 
-exec_file =  '''#!/bin/bash
-
-SINGULARITY_IMAGE_PATH=/sdf/sw/ml/slac-ml/20200227.0/slac-jupyterlab@20200227.0.sif
-
-singularity exec --nv -B /sdf,/gpfs,/scratch,/lscratch ${SINGULARITY_IMAGE_PATH} python /gpfs/slac/atlas/fs1/u/rafaeltl/Muon/toy_sim/si-mu-lator/si_mu_late.py _OPTIONS_ -r $1
-
-'''
-
 njobs=20
 iseed=8181
 
-here            = "/gpfs/slac/atlas/fs1/u/rafaeltl/Muon/toy_sim/si-mu-lator/"
+here            = os.getcwd() + '/'
 detcard_name    = "atlas_mm"
 det_card        = here+"/cards/"+detcard_name+".yml"
 out_loc         = here+"/out_files/"
@@ -20,7 +12,15 @@ nevs            = 1000
 bkg_rate        = 10000000
 generate_muon   = True
 muon_x_width    = [-0.015, 0.015]
+exec_file =  '''#!/bin/bash
 
+SINGULARITY_IMAGE_PATH=/sdf/sw/ml/slac-ml/20200227.0/slac-jupyterlab@20200227.0.sif
+
+singularity exec --nv -B /sdf,/gpfs,/scratch,/lscratch ${SINGULARITY_IMAGE_PATH} python _HERE_/si_mu_late.py _OPTIONS_ -r $1
+
+'''
+
+exec_file = exec_file.replace("_HERE", here)
 base_name = f"{detcard_name}.nevs_{nevs}.bkgr_{bkg_rate}"
 
 if generate_muon:
