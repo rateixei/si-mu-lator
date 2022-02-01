@@ -85,8 +85,15 @@ def run_event(iev):
 def make_signal_matrix(res):
     
     evs = []
+
+    ## get max number of hits
     max_sigs = np.max( [ iev.get()[0].shape[0] for iev in res ] )
-    out_matrix = np.zeros( ( len(res), max_sigs, 11 ) )
+    
+    ## assert that  dicts have the same number of columns
+    assert all(iev.get()[0].shape[1]==res[0].get()[0].shape[1] for iev in res)
+    ncols = res[0].get()[0].shape[1]
+
+    out_matrix = np.zeros( ( len(res), max_sigs, ncols ) )
     key = []
     mu_configs = []
     for iiev,iev in enumerate(res):
@@ -114,9 +121,9 @@ def make_event_dict(sig_mat, mu_configs):
     for iev in range(sig_mat.shape[0]):
         
         ## number of signals with z > 0
-        event_dict['n_signals'].append( np.sum(sig_mat[iev,:,8] > 0) ) 
+        event_dict['n_signals'].append( np.sum(sig_mat[iev,:,1] > 0) ) 
         ## number of signals with is_muon == True
-        event_dict['n_mu_signals'].append( np.sum(sig_mat[iev,:,10] == True) ) 
+        event_dict['n_mu_signals'].append( np.sum(sig_mat[iev,:,0] == True) ) 
         ## injected mu x
         if mu_configs[iev] is not None:
             event_dict['mu_x'].append( mu_configs[iev][0] )

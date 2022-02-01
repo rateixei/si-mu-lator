@@ -1,17 +1,19 @@
 import os
 import sys
 
-njobs=20
-iseed=8181
+njobs=50
+iseed=12321
 
-here            = os.getcwd() + '/'
+here_batch      = os.getcwd() + '/'
+here            = here_batch.replace('/slac_batch', '')
 detcard_name    = "atlas_mm"
 det_card        = here+"/cards/"+detcard_name+".yml"
 out_loc         = here+"/out_files/"
 nevs            = 1000
 bkg_rate        = 10000000
 generate_muon   = True
-muon_x_width    = [-0.015, 0.015]
+muon_x_width    = [-0.005, 0.005]
+muon_a_width    = [-0.0008, 0.0008]
 exec_file =  '''#!/bin/bash
 
 SINGULARITY_IMAGE_PATH=/sdf/sw/ml/slac-ml/20200227.0/slac-jupyterlab@20200227.0.sif
@@ -53,8 +55,8 @@ for ir in range(iseed, iseed+njobs):
     torun = f"{exec_file_name} {ir} "
 
     batch_exec  = f"sbatch --partition=usatlas --job-name={jname} "
-    batch_exec += f"--output={here}/logs/{jname}_o.txt "
-    batch_exec += f"--error={here}/logs/{jname}_e.txt "
+    batch_exec += f"--output={here_batch}/logs/{jname}_o.txt "
+    batch_exec += f"--error={here_batch}/logs/{jname}_e.txt "
     batch_exec += f"--ntasks=1 --cpus-per-task=4 --mem-per-cpu=3g "
     batch_exec += f"--time=2:00:00 {torun}"
 
