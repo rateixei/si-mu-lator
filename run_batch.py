@@ -20,7 +20,7 @@ singularity exec --nv -B /sdf,/gpfs,/scratch,/lscratch ${SINGULARITY_IMAGE_PATH}
 
 '''
 
-exec_file = exec_file.replace("_HERE", here)
+exec_file = exec_file.replace("_HERE_", here)
 base_name = f"{detcard_name}.nevs_{nevs}.bkgr_{bkg_rate}"
 
 if generate_muon:
