@@ -25,11 +25,13 @@ class Segment:
         self.is_sig = True
     
 class Signal:
-    def __init__(self, hash_seg_line_x, hash_seg_line_y, z, time, is_muon):
+    def __init__(self, hash_seg_line_x, hash_seg_line_y, z, time, seg_ix, rdrift, is_muon):
         self.hash_seg_x = hash_seg_line_x
         self.hash_seg_y = hash_seg_line_y
         self.z = z
         self.time = time
+        self.seg_ix = seg_ix
+        self.rdrift = rdrift
         self.is_muon = is_muon
         
     def get_info_wrt_plane(self, plane, display=False):
@@ -48,6 +50,8 @@ class Signal:
                    'projY_at_middle_y': float(y_middle.y),
                    'z': plane.z,
                    'time': self.time,
+                   'seg_ix': self.seg_ix,
+                   'rdrift': self.rdrift,
                    'is_muon': self.is_muon
                    }
         if display:
@@ -62,5 +66,7 @@ class Signal:
         hit_info += f'hash_seg_y = {self.hash_seg_y}' + '\n\t'
         hit_info += f'z = {self.z}' + '\n\t'
         hit_info += f'time = {self.time}' + '\n\t'
+        hit_info += f'seg_ix = {self.seg_ix}' + '\n\t'
+        hit_info += f'rdrift = {self.rdrift}' + '\n\t' 
         hit_info += f'is_muon = {self.is_muon}' + '\n'
         print(hit_info)

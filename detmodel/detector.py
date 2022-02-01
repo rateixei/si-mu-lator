@@ -27,6 +27,7 @@ class Detector:
 
     def add_muon(self, mu_x, mu_y, mu_theta, mu_phi=0, mu_time=0):
 #         print("-- Adding muon --")
+        print("muon x, y, theta:", f"{mu_x:.2f}", f"{mu_y:.2f}", f"{mu_theta:.2f}")
         self.has_mu = 1
         self.muinit = {'x': mu_x, 'y': mu_y, 'theta': mu_theta, 'phi': mu_phi, 'time': mu_time}
         self.mymu = Muon(x=mu_x, y=mu_y, theta=mu_theta, phi=mu_phi, time=mu_time)
@@ -48,7 +49,7 @@ class Detector:
              noise_rate_per_module (Hz) * p_width_t (ns) * 1e-9
         '''
         
-        if self.specs['det_width_t'] is 0:
+        if self.specs['det_width_t'] == 0:
                 print("det_width_t is set to 0, so you're trying to integrate noise over a window of 0 time, please specify time window")
                 sys.exit()
                 
@@ -66,22 +67,19 @@ class Detector:
 #         print("-- Getting signals --")
         signals = []
         keys = []
-        
-        for ip,p in enumerate(self.planes):
-            p_return = p.return_signal(summary)
-            
-            if p_return is not None:
-                p_sig, p_keys = p_return
-                signals.append(p_sig)
-                
-                if len(keys) == 0:
-                    keys = p_keys[:]
 
-        if len(signals) == 0:
-            return None
-        else:
-            signals = np.concatenate(signals)
-            return (signals,keys)
+        det_mdt = 'MDT' in self.specs['name']
+                    
+        for ip,p in enumerate(self.planes):
+            p_sig, p_keys = p.return_signal(det_mdt, summary)
+            signals.append(p_sig)
+            if len(keys) == 0:
+                keys = p_keys[:]
+                
+        signals = np.concatenate(signals)
+        print("Keys for signals:", keys)
+        print("Signals:", signals)
+        return (signals,keys)
 
     def read_card(self, detector_card):
         print("-- Reading card --")
@@ -100,6 +98,8 @@ class Detector:
             p_z = self.specs['planes'][p]['z']
 
             p_tilt = 0 if 'tilt' not in self.specs['planes'][p] else self.specs['planes'][p]['tilt']
+
+            p_offset = 0 if 'offset' not in self.specs['planes'][p] else self.specs['planes'][p]['offset']
 
             p_width_x = 0 if 'det_width_x' not in self.specs else self.specs['det_width_x']
             p_width_y = 0 if 'det_width_y' not in self.specs else self.specs['det_width_y']
@@ -150,7 +150,7 @@ class Detector:
             p_i = Plane(z=p_z,
             width_x=p_width_x, width_y=p_width_y, width_t=p_width_t,
             n_x_seg=p_n_x_seg, n_y_seg=p_n_y_seg, n_t_seg=p_n_t_seg,
-            x_res=p_x_res, y_rex=p_y_res, z_res=p_z_res, t_res=p_t_res,
-                                  tilt=p_tilt)
+            x_res=p_x_res, y_res=p_y_res, z_res=p_z_res, t_res=p_t_res,
+                                  tilt=p_tilt, offset=p_offset)
 
             self.planes.append(p_i)

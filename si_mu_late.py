@@ -26,11 +26,11 @@ parser.add_argument('-o', '--outfile', dest='outf', type=str, required=True,
 parser.add_argument('-m', '--addmuon', dest='ismu', action='store_true', default=False,
                     help='Simulate muon')
 parser.add_argument('-x', '--muonx', nargs=2, metavar=('muxmin', 'muxmax'), 
-                    default=(0,0), type=float, help='Generated muon X')
+                    default=(0,0), help='Generated muon X')
 parser.add_argument('-y', '--muony', nargs=2, metavar=('muymin', 'muymax'), 
-                    default=(0,0), type=float, help='Generated muon Y')
+                    default=(0,0), help='Generated muon Y')
 parser.add_argument('-a', '--muona', nargs=2, metavar=('muamin', 'muamax'), 
-                    default=(0,0), type=float, help='Generated muon angle')
+                    default=(0,0), help='Generated muon angle')
     
 # background simulation
 parser.add_argument('-b', '--bkgrate', dest='bkgr', type=float, default=0,
@@ -56,15 +56,15 @@ def run_event(iev):
     if my_configs.ismu:
         mu_x = 0
         if my_configs.muonx[0] < my_configs.muonx[1]:
-            mu_x = np.random.uniform(low=my_configs.muonx[0], high=my_configs.muonx[1])
+            mu_x = np.random.uniform(low=float(my_configs.muonx[0]), high=float(my_configs.muonx[1]))
         
         mu_y = 0
         if my_configs.muony[0] < my_configs.muony[1]:
-            mu_y = np.random.uniform(low=my_configs.muony[0], high=my_configs.muony[1])
+            mu_y = np.random.uniform(low=float(my_configs.muony[0]), high=float(my_configs.muony[1]))
             
         mu_a = 0
         if my_configs.muona[0] < my_configs.muona[1]:
-            mu_a = np.random.uniform(low=my_configs.muona[0], high=my_configs.muona[1])
+            mu_a = np.random.uniform(low=float(my_configs.muona[0]), high=float(my_configs.muona[1]))
         
         my_detector.add_muon(mu_x=mu_x, mu_y=mu_y, mu_theta=mu_a, mu_phi=0, mu_time=0)
         mu_config = [mu_x, mu_y, mu_a, 0, 0]
@@ -74,19 +74,17 @@ def run_event(iev):
         my_detector.add_noise("constant", my_configs.bkgr)
     
     ## signals
-    sigs_keys = my_detector.get_signals(iev)
-    
-    if sigs_keys is not None:
-        return (sigs_keys[0], sigs_keys[1], mu_config)
-    else:
-        return None
+    sigs, keys = my_detector.get_signals(iev,summary=True)
+    return (sigs, keys, mu_config)
     
 
 def make_signal_matrix(res):
     
     evs = []
     max_sigs = np.max( [ iev.get()[0].shape[0] for iev in res ] )
-    out_matrix = np.zeros( ( len(res), max_sigs, 11 ) )
+    print('max_sigs=', max_sigs)
+    print('len res=', len(res))
+    out_matrix = np.zeros( ( len(res), max_sigs, 13 ) )
     key = []
     mu_configs = []
     for iiev,iev in enumerate(res):
@@ -116,20 +114,13 @@ def make_event_dict(sig_mat, mu_configs):
         ## number of signals with z > 0
         event_dict['n_signals'].append( np.sum(sig_mat[iev,:,8] > 0) ) 
         ## number of signals with is_muon == True
-        event_dict['n_mu_signals'].append( np.sum(sig_mat[iev,:,10] == True) ) 
+        event_dict['n_mu_signals'].append( np.sum(sig_mat[iev,:,12] == True) ) 
         ## injected mu x
-        if mu_configs[iev] is not None:
-            event_dict['mu_x'].append( mu_configs[iev][0] )
-            event_dict['mu_y'].append( mu_configs[iev][1] )
-            event_dict['mu_theta'].append( mu_configs[iev][2] )
-            event_dict['mu_phi'].append( mu_configs[iev][3] )
-            event_dict['mu_time'].append( mu_configs[iev][4] )
-        else:
-            event_dict['mu_x'].append( -99 )
-            event_dict['mu_y'].append( -99 )
-            event_dict['mu_theta'].append( -99 )
-            event_dict['mu_phi'].append( -99 )
-            event_dict['mu_time'].append( -99 )
+        event_dict['mu_x'].append( mu_configs[iev][0] )
+        event_dict['mu_y'].append( mu_configs[iev][1] )
+        event_dict['mu_theta'].append( mu_configs[iev][2] )
+        event_dict['mu_phi'].append( mu_configs[iev][3] )
+        event_dict['mu_time'].append( mu_configs[iev][4] )
     
     return event_dict
     
@@ -150,8 +141,7 @@ def main():
     results = []
     for i in range(pbar.total):
         this_res = pool.apply_async(run_event, args=(i,), callback=update)
-        if this_res is not None:
-            results.append(this_res)
+        results.append(this_res)
         
     pool.close()
     pool.join()
@@ -163,14 +153,11 @@ def main():
     sig_matrix, sig_keys, mu_confs = make_signal_matrix(results)
     ev_dict = make_event_dict(sig_matrix, mu_confs)
     
-    out_file_name = my_configs.outf.replace('.h5', 
-                        f'_Rnd{my_configs.randseed}.h5')
-
-    with h5py.File(out_file_name, 'w') as hf:
+    with h5py.File(my_configs.outf, 'w') as hf:
         hf.create_dataset("signals", data=sig_matrix)
         hf.create_dataset("signal_keys", data=np.array(mu_confs))
         for kk in ev_dict:
-            hf.create_dataset('ev_'+kk, data=np.array(ev_dict[kk]) )
+            hf.create_dataset('ev_'+kk, data=np.array(ev_dict[kk]))
     print("Saved!")
         
 

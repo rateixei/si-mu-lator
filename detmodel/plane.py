@@ -12,10 +12,11 @@ class Plane:
     ## width_t: time window (in BCs = 25ns) to integrate signal
     ## n_?_seg: number of allowed segments in each coordinate
     ## segment size is then width_?/n_?_seg
+    ## offset in x segmentation due to staggering between tube layers
     def __init__(self, z, width_x=10, width_y=10, width_t=10,
                           n_x_seg=10, n_y_seg=0, n_t_seg=10,
-                          x_res=0, y_rex=0, z_res=0, t_res=0,
-                          tilt=0):
+                          x_res=0, y_res=0, z_res=0, t_res=0,
+                          tilt=0, offset=0):
         ## geometry
         self.z = z
         self.point = sympy.Point3D(0,0,z)
@@ -23,6 +24,9 @@ class Plane:
 
         ## detector plane tilt
         self.tilt = tilt
+        
+        ## tube layer staggering (in x only so far)
+        self.offset = offset
 
         ## detector geometrical boundaries, assuming squares now
         self.sizes = {
@@ -42,7 +46,7 @@ class Plane:
             tilt_width_x_min = -0.5*width_x - 0.5*tilt_dx
 
         self.segmentations = {
-        'x': np.linspace( tilt_width_x_min, tilt_width_x_max, n_x_seg+1 ),
+        'x': np.linspace( tilt_width_x_min+offset, tilt_width_x_max+offset, n_x_seg+1 ),
         'y': np.linspace( -0.5*width_y, 0.5*width_y, n_y_seg+1 ),
         't': np.linspace( -0.5*width_t, 0.5*width_t, n_t_seg+1 )
         }
@@ -71,7 +75,7 @@ class Plane:
         ## timing resolution of 5 BCs
         ## Resolution smearings are applied to muon only, since noise is random
         self.resolutions = {
-        'x': x_res,        'y': y_rex,
+        'x': x_res,        'y': y_res,
         'z': z_res,        't': t_res
         }
 
@@ -128,7 +132,7 @@ class Plane:
             return pos
 
     def pass_muon(self, muon):
-        ## find intersection of muon and detector plane
+        ## get intersection of muon and detector plane
 
         pmu_intersect = self.plane.intersection(muon.line)
 
@@ -152,10 +156,28 @@ class Plane:
         if np.abs(mu_ip_t) > 0.5*self.sizes['t']:
             return 0
 
+        # To compute the drift radius (for MDT detector), need to find detector element (i.e. wire) 
+        # for which this muon has the smallest distance of closest approach to the wire
+        mu_ix = 9999
+        mu_rdrift = 9999.
+        for islx, slx in enumerate(self.seg_lines['x']):
+            wirepos = sympy.Point(slx.line.p1.x, slx.line.p1.z)
+            muonpos1 = sympy.Point(muon.line.p1.x, muon.line.p1.z)
+            muonpos2 = sympy.Point(muon.line.p2.x, muon.line.p2.z)
+            muonline = sympy.Line(muonpos1, muonpos2)
+            rdrift = muonline.distance(wirepos)
+            if rdrift.evalf() < mu_rdrift:
+                mu_rdrift = rdrift.evalf()
+                mu_ix = islx
+
+        print("Found muon signal, z-plane ", self.z, " xseg ", mu_ix, " rdrift ", mu_rdrift)
+            
         muhit = Hit(mu_ip_x,
                     mu_ip_y,
                     mu_ip_z,
-                    mu_ip_t, True)
+                    mu_ip_t, 
+                    mu_ix,
+                    mu_rdrift, True)
 
         self.hits.append(muhit)
 
@@ -169,17 +191,23 @@ class Plane:
         noise_y = np.random.uniform(-0.5*self.sizes['y'], 0.5*self.sizes['y'], int(n_noise))
         noise_z = self.z*np.ones(int(n_noise))
         noise_t = np.random.uniform(-0.5*self.sizes['t'], 0.5*self.sizes['t'], int(n_noise))
+        noise_r = np.random.uniform(0.0, 0.5*self.sizes['x']/len(self.seg_lines['x']), int(n_noise))
 
         for inoise in range(int(n_noise)):
+            # find detector element (segment) closest to each noise hit along x, as needed for MDT
+            noise_ix = np.argmin( [ np.abs(noise_x[inoise]-xseg.line.p1.x) for xseg in self.seg_lines['x'] ] )
             noise_hit = Hit( noise_x[inoise],
-                                noise_y[inoise],
-                                noise_z[inoise],
-                                noise_t[inoise],
-                                False)
+                             noise_y[inoise],
+                             noise_z[inoise],
+                             noise_t[inoise],
+                             noise_ix,
+                             noise_r[inoise],
+                             False )
+            #noise_hit.print()
 
             self.hits.append(noise_hit)
     
-    def find_signal(self, this_hit):
+    def find_signal(self, mdt, this_hit):
         
         ## find which segment this hit has activated
         
@@ -188,8 +216,14 @@ class Plane:
         hit_distancey_seg = None
         hit_hash_iy = -10
         
-        hit_hash_ix = np.argmin( [ xseg.line.distance(this_hit.point()) for xseg in self.seg_lines['x'] ] )
+        if mdt: # association between hit and detector element (segment) already done according to rdrfit
+            hit_hash_ix = this_hit.seg_ix
+        else:
+            hit_hash_ix = np.argmin( [ xseg.line.distance(this_hit.point()) for xseg in self.seg_lines['x'] ] )
+
         hit_hash_iy = np.argmin( [ yseg.line.distance(this_hit.point()) for yseg in self.seg_lines['y'] ] )
+        
+        #print ("hit_hash_ix= ", hit_hash_ix, " hit_hash_iy= ", hit_hash_iy)
         
         ## if segment already has signal, skip (but set to muon if new signal is from muon)
             
@@ -197,10 +231,12 @@ class Plane:
             self.seg_lines['y'][hit_hash_iy].is_sig == False:
             
             isig = Signal( hash_seg_line_x=hit_hash_ix, hash_seg_line_y=hit_hash_iy, z=this_hit.z,
-                          time=this_hit.time, is_muon=this_hit.is_muon )
+                          time=this_hit.time, seg_ix=this_hit.seg_ix, rdrift=this_hit.rdrift, is_muon=this_hit.is_muon )
             
             self.seg_lines['x'][hit_hash_ix].add_signal(isig)
             self.seg_lines['y'][hit_hash_iy].add_signal(isig)
+            
+            #print(self.seg_lines)
             
             return isig.get_info_wrt_plane(self)
     
@@ -216,34 +252,37 @@ class Plane:
             return None
 
 
-    def hit_processor(self, summary=False):
+    def hit_processor(self, mdt=False, summary=False):
         ## decide on overlapping hits
         
-        ## sorting hits by which one arrived first
-        self.hits.sort(key=lambda hit: hit.time)
+        ## sorting hits by which one arrived first, 
+        ## unless MDT in which case smallest drift radius is preferred
+        if mdt:
+            self.hits.sort(key=lambda hit: hit.rdrift)
+        else:
+            self.hits.sort(key=lambda hit: hit.time)
         
         out_signals = []
         
         if summary:
-            print("Total number of hits:", len(self.hits) )
+            print("Total number of hits:", len(self.hits), " Plane z=", self.z )
     
         for ihit in self.hits:
-            isig_info = self.find_signal(ihit)
+            isig_info = self.find_signal(mdt, ihit)
             if isig_info is not None:
                 out_signals.append(isig_info)
 
         n_sigs = len(out_signals)
-        
-        if n_sigs < 1:
-            return None
-        
         n_props = len(out_signals[0])
         sig_matrix = np.zeros( (n_sigs, n_props) )
+        
+        if n_sigs < 1:
+            return sig_matrix
         
         for ns in range(n_sigs):
             sig_matrix[ns][:] = list( out_signals[ns].values() )
             
         return (sig_matrix, list(out_signals[ns].keys()) )
 
-    def return_signal(self, summary=False):
-        return self.hit_processor(summary)
+    def return_signal(self, mdt=False, summary=False):
+        return self.hit_processor(mdt, summary)
