@@ -1,13 +1,23 @@
+##### dimensions
+## width of new small wheel = 365 mm
+## 16 layers, so 365/16 ~22.8mm/layer
+## Define 1 a.u = 22.8mm
+## Detector starts at z = 6780mm ~300 a.u.
+## So a detector box of 0.02 a.u x 0.02 a.u ~ 4 x 4 mm2
+## The strip pitch x in the MM is 0.4~0.45mm which is ~0.002 a.u.
+## So in a box of 0.02 x 0.02 a.u^2, you have 10 x strips
+####
+
 detector:
-  name: ATLASMicroMegas
+  name: ATLASNewSmallWheel
   det_width_t: 250 ## ns window
   det_n_t_seg: 25 ## window segmentation
   #if I wanted, I could specify these things per plane
-  det_width_x: 10
-  det_width_y: 10
+  det_width_x: 0.02
+  det_width_y: 0.02
   det_n_x_seg: 10
   det_n_y_seg: 0
-  det_t_res: 5 ## timing resolution in ns
+  det_t_res: 25 ## timing resolution in ns
   planes:
     plane_1:
       z: 1
