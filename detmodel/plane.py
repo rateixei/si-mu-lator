@@ -37,8 +37,9 @@ class Plane:
         self.point = sympy.Point3D(0,0,z)
         self.plane = sympy.Plane(self.point, normal_vector=(0,0,1))
 
-        ## detector plane tilt
+        ## detector plane tilt and offset
         self.tilt = tilt
+        self.offset = offset
 
         ## detector geometrical boundaries, assuming squares now
         self.sizes = {
@@ -58,7 +59,7 @@ class Plane:
             tilt_width_x_min = -0.5*width_x - 0.5*tilt_dx
 
         self.segmentations = {
-        'x': np.linspace( tilt_width_x_min+offset, tilt_width_x_max+offset, n_x_seg+1 ),
+        'x': np.linspace( tilt_width_x_min+self.offset, tilt_width_x_max+self.offset, n_x_seg+1 ),
         'y': np.linspace( -0.5*width_y, 0.5*width_y, n_y_seg+1 ),
         't': np.linspace( -0.5*width_t, 0.5*width_t, n_t_seg+1 )
         }
