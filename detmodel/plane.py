@@ -1,8 +1,21 @@
 import numpy as np
 import sympy
+from enum import Enum
 from detmodel.hit import Hit
 from detmodel.signal import Signal, Segment
 from detmodel.muon import Muon
+
+class DetType(Enum):
+    MM   = 'mm'
+    MDT  = 'mdt'
+    STGC = 'stgc'
+
+    def asint(self):
+        return {
+            DetType.MM: 0,
+            DetType.MDT: 1,
+            DetType.STGC: 2
+        }.get(self)
 
 class Plane:
     ## planes are aligned in z
@@ -12,10 +25,13 @@ class Plane:
     ## width_t: time window (in BCs = 25ns) to integrate signal
     ## n_?_seg: number of allowed segments in each coordinate
     ## segment size is then width_?/n_?_seg
-    def __init__(self, z, width_x=10, width_y=10, width_t=10,
+    def __init__(self, p_type, z, width_x=10, width_y=10, width_t=10,
                           n_x_seg=10, n_y_seg=0, n_t_seg=10,
-                          x_res=0, y_rex=0, z_res=0, t_res=0,
-                          tilt=0):
+                          x_res=0, y_res=0, z_res=0, t_res=0,
+                          tilt=0, offset=0):
+        ## type
+        self.p_type = DetType(p_type)
+
         ## geometry
         self.z = z
         self.point = sympy.Point3D(0,0,z)
@@ -42,7 +58,7 @@ class Plane:
             tilt_width_x_min = -0.5*width_x - 0.5*tilt_dx
 
         self.segmentations = {
-        'x': np.linspace( tilt_width_x_min, tilt_width_x_max, n_x_seg+1 ),
+        'x': np.linspace( tilt_width_x_min+offset, tilt_width_x_max+offset, n_x_seg+1 ),
         'y': np.linspace( -0.5*width_y, 0.5*width_y, n_y_seg+1 ),
         't': np.linspace( -0.5*width_t, 0.5*width_t, n_t_seg+1 )
         }
@@ -71,7 +87,7 @@ class Plane:
         ## timing resolution of 5 BCs
         ## Resolution smearings are applied to muon only, since noise is random
         self.resolutions = {
-        'x': x_res,        'y': y_rex,
+        'x': x_res,        'y': y_res,
         'z': z_res,        't': t_res
         }
 
@@ -152,10 +168,29 @@ class Plane:
         if np.abs(mu_ip_t) > 0.5*self.sizes['t']:
             return 0
 
+        # To compute the drift radius (for MDT detector), need to find detector element (i.e. wire) 
+        # for which this muon has the smallest distance of closest approach to the wire
+        mu_ix = 9999
+        mu_rdrift = 9999.
+        if self.p_type == DetType.MDT:
+            for islx, slx in enumerate(self.seg_lines['x']):
+                wirepos = sympy.Point(slx.line.p1.x, slx.line.p1.z)
+                muonpos1 = sympy.Point(muon.line.p1.x, muon.line.p1.z)
+                muonpos2 = sympy.Point(muon.line.p2.x, muon.line.p2.z)
+                muonline = sympy.Line(muonpos1, muonpos2)
+                rdrift = muonline.distance(wirepos)
+                if rdrift.evalf() < mu_rdrift:
+                    mu_rdrift = rdrift.evalf()
+                    mu_ix = islx
+        
+
         muhit = Hit(mu_ip_x,
                     mu_ip_y,
                     mu_ip_z,
-                    mu_ip_t, True)
+                    mu_ip_t, 
+                    mu_ix,
+                    mu_rdrift,
+                    True)
 
         self.hits.append(muhit)
 
@@ -169,13 +204,19 @@ class Plane:
         noise_y = np.random.uniform(-0.5*self.sizes['y'], 0.5*self.sizes['y'], int(n_noise))
         noise_z = self.z*np.ones(int(n_noise))
         noise_t = np.random.uniform(-0.5*self.sizes['t'], 0.5*self.sizes['t'], int(n_noise))
+        noise_r = np.random.uniform(0.0, 0.5*self.sizes['x']/len(self.seg_lines['x']), int(n_noise))
 
         for inoise in range(int(n_noise)):
-            noise_hit = Hit( noise_x[inoise],
-                                noise_y[inoise],
-                                noise_z[inoise],
-                                noise_t[inoise],
-                                False)
+            # find detector element (segment) closest to each noise hit along x, as needed for MDT
+            noise_ix = np.argmin( [ np.abs(noise_x[inoise]-xseg.line.p1.x) for xseg in self.seg_lines['x'] ] )
+
+            noise_hit = Hit(noise_x[inoise],
+                            noise_y[inoise],
+                            noise_z[inoise],
+                            noise_t[inoise],
+                            noise_ix,
+                            noise_r[inoise],
+                            False)
 
             self.hits.append(noise_hit)
     
@@ -187,6 +228,11 @@ class Plane:
         hit_hash_ix = -10
         hit_distancey_seg = None
         hit_hash_iy = -10
+
+        if self.p_type == DetType.MDT: # association between hit and detector element (segment) already done according to rdrfit
+            hit_hash_ix = this_hit.seg_ix
+        else:
+            hit_hash_ix = np.argmin( [ xseg.line.distance(this_hit.point()) for xseg in self.seg_lines['x'] ] )
         
         hit_hash_ix = np.argmin( [ xseg.line.distance(this_hit.point()) for xseg in self.seg_lines['x'] ] )
         hit_hash_iy = np.argmin( [ yseg.line.distance(this_hit.point()) for yseg in self.seg_lines['y'] ] )
@@ -220,7 +266,10 @@ class Plane:
         ## decide on overlapping hits
         
         ## sorting hits by which one arrived first
-        self.hits.sort(key=lambda hit: hit.time)
+        if self.p_type == DetType.MDT:
+            self.hits.sort(key=lambda hit: hit.rdrift)
+        else:
+            self.hits.sort(key=lambda hit: hit.time)
         
         out_signals = []
         
