@@ -99,7 +99,8 @@ class Detector:
 
             p_z = self.specs['planes'][p]['z']
 
-            p_tilt = 0 if 'tilt' not in self.specs['planes'][p] else self.specs['planes'][p]['tilt']
+            p_tilt    = 0 if 'tilt' not in self.specs['planes'][p] else self.specs['planes'][p]['tilt']
+            p_offset  = 0 if 'offset' not in self.specs['planes'][p] else self.specs['planes'][p]['offset']
 
             p_width_x = 0 if 'det_width_x' not in self.specs else self.specs['det_width_x']
             p_width_y = 0 if 'det_width_y' not in self.specs else self.specs['det_width_y']
@@ -109,10 +110,10 @@ class Detector:
             p_n_y_seg = 0 if 'det_n_y_seg' not in self.specs else self.specs['det_n_y_seg']
             p_n_t_seg = 0 if 'det_n_t_seg' not in self.specs else self.specs['det_n_t_seg']
 
-            p_x_res = 0 if 'det_x_res' not in self.specs else self.specs['det_x_res']
-            p_y_res = 0 if 'det_y_res' not in self.specs else self.specs['det_y_res']
-            p_z_res = 0 if 'det_z_res' not in self.specs else self.specs['det_z_res']
-            p_t_res = 0 if 'det_t_res' not in self.specs else self.specs['det_t_res']
+            p_x_res   = 0 if 'det_x_res' not in self.specs else self.specs['det_x_res']
+            p_y_res   = 0 if 'det_y_res' not in self.specs else self.specs['det_y_res']
+            p_z_res   = 0 if 'det_z_res' not in self.specs else self.specs['det_z_res']
+            p_t_res   = 0 if 'det_t_res' not in self.specs else self.specs['det_t_res']
 
             if 'width_x' in self.specs['planes'][p]:
                 p_width_x = self.specs['planes'][p]['width_x']
@@ -146,11 +147,13 @@ class Detector:
                 print( f'p_n_t_seg: {p_n_t_seg}' )
                 sys.exit()
 
+            ## Currently, the only supported types are MicroMegas and MDTs
+            p_type = 'mm' if 'type' not in self.specs['planes'][p] else self.specs['planes'][p]['type']
 
-            p_i = Plane(z=p_z,
+            p_i = Plane(type=p_type, z=p_z,
             width_x=p_width_x, width_y=p_width_y, width_t=p_width_t,
             n_x_seg=p_n_x_seg, n_y_seg=p_n_y_seg, n_t_seg=p_n_t_seg,
             x_res=p_x_res, y_rex=p_y_res, z_res=p_z_res, t_res=p_t_res,
-                                  tilt=p_tilt)
+            tilt=p_tilt, offset=p_offset)
 
             self.planes.append(p_i)

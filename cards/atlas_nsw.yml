@@ -13,8 +13,8 @@ detector:
   det_width_t: 250 ## ns window
   det_n_t_seg: 25 ## window segmentation
   #if I wanted, I could specify these things per plane
-  det_width_x: 0.02
-  det_width_y: 0.02
+  det_width_x: 0.2
+  det_width_y: 0.2
   det_n_x_seg: 10
   det_n_y_seg: 0
   det_t_res: 5 ## timing resolution in ns
