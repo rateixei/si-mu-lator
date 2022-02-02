@@ -17,15 +17,22 @@ detector:
   planes:
     plane_1:
       z: 15
+      type: mdt
     plane_2:
       z: 41
       offset: 15 ## tube layers are staggered by half a tube
+      type: mdt
     plane_3:
       z: 67
+      type: mdt
     plane_4:
       z: 267
+      type: mdt
     plane_5:
       z: 293
+      type: mdt
       offset: 15
+      type: mdt
     plane_6:
       z: 319
+      type: mdt
