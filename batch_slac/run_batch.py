@@ -2,18 +2,18 @@ import os
 import sys
 
 njobs=50
-iseed=12321
+iseed=19416
 
 here_batch      = os.getcwd() + '/'
-here            = here_batch.replace('/slac_batch', '')
+here            = here_batch.replace('/batch_slac', '')
 detcard_name    = "atlas_mm"
 det_card        = here+"/cards/"+detcard_name+".yml"
 out_loc         = here+"/out_files/"
 nevs            = 1000
 bkg_rate        = 10000000
-generate_muon   = True
-muon_x_width    = [-0.005, 0.005]
-muon_a_width    = [-0.0008, 0.0008]
+generate_muon   = False
+muon_x_range    = [-0.005, 0.005]
+muon_a_range    = [-0.0008, 0.0008]
 exec_file =  '''#!/bin/bash
 
 SINGULARITY_IMAGE_PATH=/sdf/sw/ml/slac-ml/20200227.0/slac-jupyterlab@20200227.0.sif
@@ -27,7 +27,8 @@ base_name = f"{detcard_name}.nevs_{nevs}.bkgr_{bkg_rate}"
 
 if generate_muon:
     base_name = 'WithMuon.' + base_name
-    base_name += f'.mux.{muon_x_width[0]}.{muon_x_width[1]}'
+    base_name += f'.mux.{muon_x_range[0]}.{muon_x_range[1]}'
+    base_name += f'.mua.{muon_a_range[0]}.{muon_a_range[1]}'
 else:
     base_name = 'NoMuon.' + base_name
 
@@ -38,7 +39,8 @@ options += f"-b {bkg_rate} "
 
 if generate_muon:
     options += "-m "
-    options += f"-x {muon_x_width[0]} {muon_x_width[1]} "
+    options += f"-x {muon_x_range[0]} {muon_x_range[1]} "
+    options += f"-a {muon_a_range[0]} {muon_a_range[1]} "
 
 exec_file = exec_file.replace("_OPTIONS_", options)
 exec_file_name = here+base_name+".sh"
