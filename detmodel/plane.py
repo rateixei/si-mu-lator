@@ -25,12 +25,12 @@ class Plane:
     ## width_t: time window (in BCs = 25ns) to integrate signal
     ## n_?_seg: number of allowed segments in each coordinate
     ## segment size is then width_?/n_?_seg
-    def __init__(self, p_type, z, width_x=10, width_y=10, width_t=10,
+    def __init__(self, type, z, width_x=10, width_y=10, width_t=10,
                           n_x_seg=10, n_y_seg=0, n_t_seg=10,
                           x_res=0, y_res=0, z_res=0, t_res=0,
                           tilt=0, offset=0):
         ## type
-        self.p_type = DetType(p_type)
+        self.p_type = DetType(type)
 
         ## geometry
         self.z = z
@@ -171,7 +171,8 @@ class Plane:
 
         # To compute the drift radius (for MDT detector), need to find detector element (i.e. wire) 
         # for which this muon has the smallest distance of closest approach to the wire
-        mu_ix = 9999
+        # the calculation below assumes tubes are exactly vertical
+        mu_ix = -9999
         mu_rdrift = 9999.
         if self.p_type == DetType.MDT:
             for islx, slx in enumerate(self.seg_lines['x']):
@@ -181,9 +182,8 @@ class Plane:
                 muonline = sympy.Line(muonpos1, muonpos2)
                 rdrift = muonline.distance(wirepos)
                 if rdrift.evalf() < mu_rdrift:
-                    mu_rdrift = rdrift.evalf()
                     mu_ix = islx
-        
+                    mu_rdrift = rdrift.evalf()        
 
         muhit = Hit(mu_ip_x,
                     mu_ip_y,
@@ -244,7 +244,7 @@ class Plane:
             self.seg_lines['y'][hit_hash_iy].is_sig == False:
             
             isig = Signal( hash_seg_line_x=hit_hash_ix, hash_seg_line_y=hit_hash_iy, z=this_hit.z,
-                          time=this_hit.time, is_muon=this_hit.is_muon )
+                          time=this_hit.time, seg_ix=this_hit.seg_ix, rdrift=this_hit.rdrift, is_muon=this_hit.is_muon )
             
             self.seg_lines['x'][hit_hash_ix].add_signal(isig)
             self.seg_lines['y'][hit_hash_iy].add_signal(isig)

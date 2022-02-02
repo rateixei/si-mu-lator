@@ -13,7 +13,7 @@ detector:
   det_width_y: 300
   det_n_x_seg: 10
   det_n_y_seg: 0
-  det_t_res: 5 ## timing resolution in ns (not relevant here for MDT currently)
+  det_t_res: 11 ## timing resolution in ns (not relevant here for MDT currently)
   planes:
     plane_1:
       z: 15
