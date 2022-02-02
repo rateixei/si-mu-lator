@@ -40,22 +40,22 @@ class Signal:
         y_topend   = plane.seg_lines['y'][self.hash_seg_y].line.intersection(plane.get_edge('top'))[0]
         y_middle   = plane.seg_lines['y'][self.hash_seg_y].line.intersection(plane.get_edge('midy'))[0]
         
-        hit_dict =  {'projX_at_rightend_x': float(x_rightend.x),
-                   'projX_at_rightend_y': float(x_rightend.y),
-                   'projX_at_middle_x': float(x_middle.x),
-                   'projX_at_middle_y': float(x_middle.y),
-                   'projY_at_topend_x': float(y_topend.x),
-                   'projY_at_topend_y': float(y_topend.y),
-                   'projY_at_middle_x': float(y_middle.x),
-                   'projY_at_middle_y': float(y_middle.y),
-                   'z': plane.z,
-                   'ptype': plane.p_type.asint(),
-                   'ptilt': plane.tilt,
-                   'poffset': plane.offset,
-                   'time': self.time,
-                   'seg_ix': self.seg_ix,
-                   'rdrift': self.rdrift,
-                   'is_muon': self.is_muon
+        hit_dict = {'is_muon': self.is_muon,
+                    'z': plane.z,
+                    'ptype': plane.p_type.asint(),
+                    'ptilt': plane.tilt,
+                    'poffset': plane.offset,
+                    'time': self.time,
+                    'projX_at_rightend_x': float(x_rightend.x),
+                    'projX_at_rightend_y': float(x_rightend.y),
+                    'projX_at_middle_x': float(x_middle.x),
+                    'projX_at_middle_y': float(x_middle.y),
+                    'projY_at_topend_x': float(y_topend.x),
+                    'projY_at_topend_y': float(y_topend.y),
+                    'projY_at_middle_x': float(y_middle.x),
+                    'projY_at_middle_y': float(y_middle.y),
+                    'seg_ix': self.seg_ix,
+                    'rdrift': self.rdrift
                    }
         if display:
             print('Signal information:\n\t')
