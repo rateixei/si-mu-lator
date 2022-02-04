@@ -149,7 +149,6 @@ class Detector:
 
             ## Currently, the only supported types are MicroMegas and MDTs
             p_type = 'mm' if 'type' not in self.specs['planes'][p] else self.specs['planes'][p]['type']
-            print(p_type)
             
             p_i = Plane(type=p_type, z=p_z,
             width_x=p_width_x, width_y=p_width_y, width_t=p_width_t,
