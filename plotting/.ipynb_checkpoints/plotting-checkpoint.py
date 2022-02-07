@@ -139,13 +139,13 @@ def plot_det_xz(det, ax, draw_muon=False, draw_allhits=False):
             inter_right = list(slx.line.intersect( edges['right'] ))[0]
 
             lcolor = 'gray'
-            alpha = 0.2
+            alpha = 0.5
             wirepos = sympy.Point(slx.line.p1.x, slx.line.p1.z)
             xs=[ float(inter_left.x), float(inter_right.x) ]
             zs=[ pz, pz ]
             cir = plt.Circle(wirepos, tube_radius, color=lcolor, fill=False)
             ax.add_patch(cir)
-            ax.plot (xs[0], pz, marker='o', markersize=2, color=lcolor)
+            ax.plot(xs[0], pz, marker='o', markersize=2, color=lcolor, alpha=alpha)
 
         # Loop over the hits in this plane
         # Keep track of signal hits (i.e. hits with smallest drift radius in a given tube)
@@ -171,7 +171,7 @@ def plot_det_xz(det, ax, draw_muon=False, draw_allhits=False):
             cir = plt.Circle(wirepos, rdrift, color=lcolor, linewidth=2, fill=False)
             ax.add_patch(cir)
 
-            ax.plot ( xs[0], pz, marker='o', markersize=2, color=lcolor)
+            ax.plot(xs[0], pz, marker='o', markersize=2, color=lcolor, alpha=alpha)
 
     if draw_muon:
         plane_init = sympy.Plane(sympy.Point3D(0,0,-10) , normal_vector=(0,0,1))
