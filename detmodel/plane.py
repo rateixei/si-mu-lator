@@ -171,7 +171,7 @@ class Plane:
 
         # To compute the drift radius (for MDT detector), need to find detector element (i.e. wire) 
         # for which this muon has the smallest distance of closest approach to the wire
-        # the calculation below assumes tubes are exactly vertical
+        # Caveat: the calculation below assumes tubes are exactly vertical
         mu_ix = -9999
         mu_rdrift = 9999.
         if self.p_type == DetType.MDT:
@@ -183,8 +183,11 @@ class Plane:
                 rdrift = muonline.distance(wirepos)
                 if rdrift.evalf() < mu_rdrift:
                     mu_ix = islx
-                    mu_rdrift = rdrift.evalf()        
-
+                    mu_rdrift = rdrift.evalf()
+            # do not record hit if closest wire further than tube radius
+            if mu_rdrift > 0.5*self.sizes['x']/len(self.seg_lines['x']): 
+                return 0
+            
         muhit = Hit(mu_ip_x,
                     mu_ip_y,
                     mu_ip_z,
