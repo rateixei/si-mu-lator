@@ -55,7 +55,7 @@ class Detector:
         if noise_type=='constant':    
 
             n_noise = noise_rate_per_module * self.specs['det_width_t'] * 1e-9
-            
+                       
             for p in self.planes:
                 n_noise_rand = np.random.poisson(n_noise)
                 p.add_noise(n_noise_rand)
