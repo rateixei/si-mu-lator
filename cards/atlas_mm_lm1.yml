@@ -13,7 +13,7 @@ detector:
   det_n_x_seg: 10
   
   ## the "horizontal" size of the MM
-  det_width_y: 426,7
+  det_width_y: 426.7
   det_n_y_seg: 0
   
   planes:
