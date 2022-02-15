@@ -93,7 +93,7 @@ def make_signal_matrix(res):
     assert all(iev.get()[0].shape[1]==res[0].get()[0].shape[1] for iev in res)
     ncols = res[0].get()[0].shape[1]
 
-    out_matrix = np.zeros( ( len(res), max_sigs, ncols ) )
+    out_matrix = -99 * np.ones( ( len(res), max_sigs, ncols ) )
     key = []
     mu_configs = []
     for iiev,iev in enumerate(res):

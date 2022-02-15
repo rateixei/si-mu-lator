@@ -55,7 +55,7 @@ class Detector:
         if noise_type=='constant':    
 
             n_noise = noise_rate_per_module * self.specs['det_width_t'] * 1e-9
-            
+                       
             for p in self.planes:
                 n_noise_rand = np.random.poisson(n_noise)
                 p.add_noise(n_noise_rand)
@@ -149,11 +149,11 @@ class Detector:
 
             ## Currently, the only supported types are MicroMegas and MDTs
             p_type = 'mm' if 'type' not in self.specs['planes'][p] else self.specs['planes'][p]['type']
-
+            
             p_i = Plane(type=p_type, z=p_z,
             width_x=p_width_x, width_y=p_width_y, width_t=p_width_t,
             n_x_seg=p_n_x_seg, n_y_seg=p_n_y_seg, n_t_seg=p_n_t_seg,
-            x_res=p_x_res, y_rex=p_y_res, z_res=p_z_res, t_res=p_t_res,
+            x_res=p_x_res, y_res=p_y_res, z_res=p_z_res, t_res=p_t_res,
             tilt=p_tilt, offset=p_offset)
 
             self.planes.append(p_i)
