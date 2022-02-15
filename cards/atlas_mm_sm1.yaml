@@ -1,0 +1,39 @@
+detector:
+  name: ATLAS_MM_SM1
+
+  ## ns window
+  det_width_t: 250 
+  ## window segmentation, 1 bunch crossing
+  det_n_t_seg: 25 
+  ## timing resolution in ns
+  det_t_res: 25 
+
+  ## the pitch of the MM is about 0.45 mm, here we have a box of 10 strips
+  det_width_x: 4.25 
+  det_n_x_seg: 10
+  
+  ## the "horizontal" size of the MM
+  det_width_y: 284.0
+  det_n_y_seg: 0
+  
+  planes:
+    plane_1:
+      z: 7088.5
+    plane_2:
+      z: 7099.95
+    plane_3:
+      z: 7121.65
+      tilt: 0.0262 ## 1.5 in degree
+    plane_4:
+      z: 7133.1
+      tilt: -0.0261799
+    plane_5:
+      z: 7219.5
+      tilt: 0.0261799
+    plane_6:
+      z: 7230.95
+      tilt: -0.0261799
+    plane_7:
+      z: 7252.65
+    plane_8:
+      z: 7264.1
