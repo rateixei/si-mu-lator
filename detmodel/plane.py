@@ -201,16 +201,23 @@ class Plane:
         return 1
 
 
-    def add_noise(self, n_noise):
+    def add_noise(self, noise_rate_per_module):
         ## add uniform random noise hits
+        ## here we input noise_rate_per_module
+        ## so to generate plane noise, we need to multiply noise_rate_per_module*n_segs
+        
+        if self.p_type == DetType.MM:
+            n_noise = int(np.random.poisson(noise_rate_per_module*len(self.segmentations['x'])))
+        else:
+            n_noise = int(np.random.poisson(noise_rate_per_module))
+        
+        noise_x = np.random.uniform(-0.5*self.sizes['x'], 0.5*self.sizes['x'], n_noise )
+        noise_y = np.random.uniform(-0.5*self.sizes['y'], 0.5*self.sizes['y'], n_noise )
+        noise_z = self.z*np.ones(n_noise)
+        noise_t = np.random.uniform(-0.5*self.sizes['t'], 0.5*self.sizes['t'], n_noise)
+        noise_r = np.random.uniform(0.0, 0.5*self.sizes['x']/len(self.seg_lines['x']), n_noise)
 
-        noise_x = np.random.uniform(-0.5*self.sizes['x'], 0.5*self.sizes['x'], int(n_noise))
-        noise_y = np.random.uniform(-0.5*self.sizes['y'], 0.5*self.sizes['y'], int(n_noise))
-        noise_z = self.z*np.ones(int(n_noise))
-        noise_t = np.random.uniform(-0.5*self.sizes['t'], 0.5*self.sizes['t'], int(n_noise))
-        noise_r = np.random.uniform(0.0, 0.5*self.sizes['x']/len(self.seg_lines['x']), int(n_noise))
-
-        for inoise in range(int(n_noise)):
+        for inoise in range(n_noise):
             # find detector element (segment) closest to each noise hit along x, as needed for MDT
             noise_ix = np.argmin( [ np.abs(noise_x[inoise]-xseg.line.p1.x) for xseg in self.seg_lines['x'] ] )
 

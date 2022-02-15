@@ -24,16 +24,18 @@ detector:
     plane_3:
       z: 7585.65
       tilt: 0.0262 ## 1.5 in degree
+      n_x_seg: 34
     plane_4:
       z: 7597.1
       tilt: -0.0261799
-    plane_5:
-      z: 7683.5
-      tilt: 0.0261799
-    plane_6:
-      z: 7694.95
-      tilt: -0.0261799
-    plane_7:
-      z: 7716.65
-    plane_8:
-      z: 7728.1
+      n_x_seg: 34
+#     plane_5:
+#       z: 7683.5
+#       tilt: 0.0261799
+#     plane_6:
+#       z: 7694.95
+#       tilt: -0.0261799
+#     plane_7:
+#       z: 7716.65
+#     plane_8:
+#       z: 7728.1

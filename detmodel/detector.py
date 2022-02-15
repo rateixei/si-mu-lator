@@ -57,8 +57,7 @@ class Detector:
             n_noise = noise_rate_per_module * self.specs['det_width_t'] * 1e-9
                        
             for p in self.planes:
-                n_noise_rand = np.random.poisson(n_noise)
-                p.add_noise(n_noise_rand)
+                p.add_noise(n_noise)
         else:
             print("TBI")
 
@@ -82,6 +81,20 @@ class Detector:
         else:
             signals = np.concatenate(signals)
             return (signals,keys)
+    
+    def find_plane_par(self, par, iplane):
+        
+        if 'name' not in self.specs:
+            print("Need to initialize specs first")
+            return None
+        
+        if par in self.specs['planes'][iplane]:
+            return self.specs['planes'][iplane][par]
+        elif str('det_'+par) in self.specs:
+            return self.specs[str('det_'+par)]
+        else:
+            return 0
+        
 
     def read_card(self, detector_card):
         print("-- Reading card --")
@@ -99,42 +112,21 @@ class Detector:
 
             p_z = self.specs['planes'][p]['z']
 
-            p_tilt    = 0 if 'tilt' not in self.specs['planes'][p] else self.specs['planes'][p]['tilt']
-            p_offset  = 0 if 'offset' not in self.specs['planes'][p] else self.specs['planes'][p]['offset']
+            p_tilt    = self.find_plane_par('tilt', p)
+            p_offset  = self.find_plane_par('offset', p)
 
-            p_width_x = 0 if 'det_width_x' not in self.specs else self.specs['det_width_x']
-            p_width_y = 0 if 'det_width_y' not in self.specs else self.specs['det_width_y']
-            p_width_t = 0 if 'det_width_t' not in self.specs else self.specs['det_width_t']
+            p_width_x = self.find_plane_par('width_x', p)
+            p_width_y = self.find_plane_par('width_y', p)
+            p_width_t = self.find_plane_par('width_t', p)
 
-            p_n_x_seg = 0 if 'det_n_x_seg' not in self.specs else self.specs['det_n_x_seg']
-            p_n_y_seg = 0 if 'det_n_y_seg' not in self.specs else self.specs['det_n_y_seg']
-            p_n_t_seg = 0 if 'det_n_t_seg' not in self.specs else self.specs['det_n_t_seg']
+            p_n_x_seg = self.find_plane_par('n_x_seg', p)
+            p_n_y_seg = self.find_plane_par('n_y_seg', p)
+            p_n_t_seg = self.find_plane_par('n_t_seg', p)
 
-            p_x_res   = 0 if 'det_x_res' not in self.specs else self.specs['det_x_res']
-            p_y_res   = 0 if 'det_y_res' not in self.specs else self.specs['det_y_res']
-            p_z_res   = 0 if 'det_z_res' not in self.specs else self.specs['det_z_res']
-            p_t_res   = 0 if 'det_t_res' not in self.specs else self.specs['det_t_res']
-
-            if 'width_x' in self.specs['planes'][p]:
-                p_width_x = self.specs['planes'][p]['width_x']
-
-            if 'width_y' in self.specs['planes'][p]:
-                p_width_y = self.specs['planes'][p]['width_y']
-
-            if 'width_t' in self.specs['planes'][p]:
-                p_width_t = self.specs['planes'][p]['width_t']
-
-            if 'n_x_seg' in self.specs['planes'][p]:
-                p_n_x_seg = self.specs['planes'][p]['n_x_seg']
-
-            if 'n_y_seg' in self.specs['planes'][p]:
-                p_n_y_seg = self.specs['planes'][p]['n_y_seg']
-
-            if 'n_t_seg' in self.specs['planes'][p]:
-                p_n_t_seg = self.specs['planes'][p]['n_t_seg']
-
-            if 't_res' in self.specs['planes'][p]:
-                p_t_res = self.specs['planes'][p]['t_res']
+            p_x_res   = self.find_plane_par('x_res', p)
+            p_y_res   = self.find_plane_par('y_res', p)
+            p_z_res   = self.find_plane_par('z_res', p)
+            p_t_res   = self.find_plane_par('t_res', p)
 
             if p_width_x == 0 or p_width_y == 0 or p_width_t == 0 \
                 or p_n_x_seg == 0 or p_n_t_seg == 0:
