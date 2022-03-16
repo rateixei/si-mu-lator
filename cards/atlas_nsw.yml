@@ -10,6 +10,7 @@
 
 detector:
   name: ATLASNewSmallWheel
+  
   det_width_t: 250 ## ns window
   det_n_t_seg: 25 ## window segmentation
   #if I wanted, I could specify these things per plane
@@ -18,6 +19,8 @@ detector:
   det_n_x_seg: 10
   det_n_y_seg: 0
   det_t_res: 5 ## timing resolution in ns
+  det_strip_noise_rate: [70000, 150000, 336000] ## noise rate per strip in Hz for MM, MDT, sTGC
+  
   planes:
     plane_1:
       z: 1

@@ -25,22 +25,26 @@ class Segment:
         self.is_sig = True
     
 class Signal:
-    def __init__(self, hash_seg_line_x, hash_seg_line_y, z, time, seg_ix, rdrift, is_muon):
+    def __init__(self, hash_seg_line_x, hash_seg_line_y, x, y, z, time, seg_ix, rdrift, is_muon):
         self.hash_seg_x = hash_seg_line_x
         self.hash_seg_y = hash_seg_line_y
+        self.x = x
+        self.y = y
         self.z = z
         self.time = time
         self.seg_ix = seg_ix
         self.rdrift = rdrift
         self.is_muon = is_muon
         
-    def get_info_wrt_plane(self, plane, display=False):
+    def get_info_wrt_plane(self, plane, display=True):
         x_rightend = plane.seg_lines['x'][self.hash_seg_x].line.intersection(plane.get_edge('right'))[0]
         x_middle   = plane.seg_lines['x'][self.hash_seg_x].line.intersection(plane.get_edge('midx'))[0]
         y_topend   = plane.seg_lines['y'][self.hash_seg_y].line.intersection(plane.get_edge('top'))[0]
         y_middle   = plane.seg_lines['y'][self.hash_seg_y].line.intersection(plane.get_edge('midy'))[0]
         
         hit_dict = {'is_muon': self.is_muon,
+                    'x': self.x,
+                    'y': self.y,
                     'z': plane.z,
                     'ptype': plane.p_type.asint(),
                     'ptilt': plane.tilt,
@@ -67,6 +71,8 @@ class Signal:
         hit_info = 'Signal information:\n\t'
         hit_info += f'hash_seg_x = {self.hash_seg_x}' + '\n\t'
         hit_info += f'hash_seg_y = {self.hash_seg_y}' + '\n\t'
+        hit_info += f'x = {self.x}' + '\n\t'
+        hit_info += f'y = {self.y}' + '\n\t'
         hit_info += f'z = {self.z}' + '\n\t'
         hit_info += f'time = {self.time}' + '\n\t'
         hit_info += f'seg_ix = {self.seg_ix}' + '\n\t'
