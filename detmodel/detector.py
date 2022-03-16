@@ -57,7 +57,6 @@ class Detector:
                        
             for p in self.planes:
                 type_idx = DetType.asint(p.p_type)
-                print(len(p.segmentations['x']), p.sizes['t'])
                 n_noise = noise_scale * (len(p.segmentations['x']) -1) \
                     * self.specs['det_strip_noise_rate'][type_idx] \
                     * p.sizes['t'] * 1e-9

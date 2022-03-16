@@ -36,7 +36,7 @@ class Signal:
         self.rdrift = rdrift
         self.is_muon = is_muon
         
-    def get_info_wrt_plane(self, plane, display=True):
+    def get_info_wrt_plane(self, plane, display=False):
         x_rightend = plane.seg_lines['x'][self.hash_seg_x].line.intersection(plane.get_edge('right'))[0]
         x_middle   = plane.seg_lines['x'][self.hash_seg_x].line.intersection(plane.get_edge('midx'))[0]
         y_topend   = plane.seg_lines['y'][self.hash_seg_y].line.intersection(plane.get_edge('top'))[0]
