@@ -57,8 +57,10 @@ class Detector:
                        
             for p in self.planes:
                 type_idx = DetType.asint(p.p_type)
-                n_noise = noise_scale * self.specs['det_n_x_seg'] * self.specs['det_strip_noise_rate'][type_idx] \
-                    * self.specs['det_width_t'] * 1e-9
+                print(len(p.segmentations['x']), p.sizes['t'])
+                n_noise = noise_scale * (len(p.segmentations['x']) -1) \
+                    * self.specs['det_strip_noise_rate'][type_idx] \
+                    * p.sizes['t'] * 1e-9
                 n_noise_rand = np.random.poisson(n_noise)
                 p.add_noise(n_noise_rand)
         else:
