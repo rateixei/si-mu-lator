@@ -6,6 +6,7 @@ from detmodel.hit import Hit
 from detmodel.signal import Signal
 from detmodel.muon import Muon
 from detmodel.plane import Plane
+from detmodel.plane import DetType
 
 ## ToDo:
 ### Add print method to summarize detector
@@ -38,25 +39,27 @@ class Detector:
 
         return mu_res
 
-    def add_noise(self, noise_type, noise_rate_per_module):
+    def add_noise(self, noise_type, noise_scale):
 #         print("-- Adding noise --")
         
         '''
         p_width_t is the time window in which to integrate the signal (in nano seconds)
         therefore, the number of noise hits is:
         
-             noise_rate_per_module (Hz) * p_width_t (ns) * 1e-9
+             noise_scale * det_strip_noise_rate (Hz) * det_n_x_seg * p_width_t (ns) * 1e-9
         '''
         
-        if self.specs['det_width_t'] is 0:
+        if self.specs['det_width_t'] == 0:
                 print("det_width_t is set to 0, so you're trying to integrate noise over a window of 0 time, please specify time window")
                 sys.exit()
                 
         if noise_type=='constant':    
-
-            n_noise = noise_rate_per_module * self.specs['det_width_t'] * 1e-9
                        
             for p in self.planes:
+                type_idx = DetType.asint(p.p_type)
+                n_noise = noise_scale * (len(p.segmentations['x']) -1) \
+                    * self.specs['det_strip_noise_rate'][type_idx] \
+                    * p.sizes['t'] * 1e-9
                 n_noise_rand = np.random.poisson(n_noise)
                 p.add_noise(n_noise_rand)
         else:
@@ -90,6 +93,8 @@ class Detector:
             # fyml = yaml.load(f, Loader=yaml.FullLoader) ## only works on yaml > 5.1
             fyml = yaml.safe_load(f)
             self.specs = fyml['detector']
+
+        det_strip_noise_rate = 0 if 'det_strip_noise_rate' not in self.specs else self.specs['det_strip_noise_rate']
 
         for p in self.specs['planes']:
 
@@ -147,8 +152,10 @@ class Detector:
                 print( f'p_n_t_seg: {p_n_t_seg}' )
                 sys.exit()
 
-            ## Currently, the only supported types are MicroMegas and MDTs
+            ## Supported types are MicroMegas, MDTs, and sTGCs
             p_type = 'mm' if 'type' not in self.specs['planes'][p] else self.specs['planes'][p]['type']
+            type_idx = ['mm', 'mdt', 'stgc'].index(p_type)
+            p_noise_rate = 0 if det_strip_noise_rate == 0 else det_strip_noise_rate[type_idx]
             
             p_i = Plane(type=p_type, z=p_z,
             width_x=p_width_x, width_y=p_width_y, width_t=p_width_t,

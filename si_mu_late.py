@@ -34,7 +34,7 @@ parser.add_argument('-a', '--muona', nargs=2, metavar=('muamin', 'muamax'),
     
 # background simulation
 parser.add_argument('-b', '--bkgrate', dest='bkgr', type=float, default=0,
-                       help='Background rate (Hz) per module unit')
+                       help='Background rate scale factor')
 
 # other
 parser.add_argument('-r', '--randomseed', dest='randseed', type=int, default=42,
@@ -121,7 +121,7 @@ def make_event_dict(sig_mat, mu_configs):
     for iev in range(sig_mat.shape[0]):
         
         ## number of signals with z > 0
-        event_dict['n_signals'].append( np.sum(sig_mat[iev,:,1] > 0) ) 
+        event_dict['n_signals'].append( np.sum(sig_mat[iev,:,3] > 0) ) 
         ## number of signals with is_muon == True
         event_dict['n_mu_signals'].append( np.sum(sig_mat[iev,:,0] == True) ) 
         ## injected mu x

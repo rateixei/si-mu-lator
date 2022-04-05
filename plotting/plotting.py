@@ -12,6 +12,7 @@ def plot_det_volume(det, ax, draw_muon=False):
     max_x = 0
     max_y = 0
     max_z = 0
+    min_z = 999999
     
     for ip,p in enumerate(det.planes):
         pz = p.z
@@ -30,6 +31,7 @@ def plot_det_volume(det, ax, draw_muon=False):
         if 0.5*p.sizes['x'] > max_x: max_x = 0.5*p.sizes['x']
         if 0.5*p.sizes['y'] > max_y: max_y = 0.5*p.sizes['y']
         if pz > max_z: max_z = pz
+        if pz < min_z: min_z = pz
             
         for islx, slx in enumerate(p.seg_lines['x']):
 #             print(slx.line)
@@ -79,9 +81,9 @@ def plot_det_volume(det, ax, draw_muon=False):
                     zs=[ pz,pz ],
                     color=lcolor, alpha=alpha
                 )
-    
+                
     if draw_muon:
-        plane_init = sympy.Plane(sympy.Point3D(0,0,0) , normal_vector=(0,0,1))
+        plane_init = sympy.Plane(sympy.Point3D(0,0,min_z-1) , normal_vector=(0,0,1))
         plane_final = sympy.Plane(sympy.Point3D(0,0,max_z+1) , normal_vector=(0,0,1))
         intersect_init = list(plane_init.intersection( det.mymu.line ))
         intersect_final = list(plane_final.intersection( det.mymu.line ))
@@ -95,7 +97,7 @@ def plot_det_volume(det, ax, draw_muon=False):
 
     ax.set_xlim(-max_x*1, max_x*1)
     ax.set_ylim(-max_y*1, max_y*1)
-    ax.set_zlim(0, max_z+1)
+    ax.set_zlim(min_z-1, max_z+1)
     
     ax.set_xlabel('x')
     ax.set_ylabel('y')

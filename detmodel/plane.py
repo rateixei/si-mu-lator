@@ -246,8 +246,10 @@ class Plane:
         if self.seg_lines['x'][hit_hash_ix].is_sig == False or \
             self.seg_lines['y'][hit_hash_iy].is_sig == False:
             
-            isig = Signal( hash_seg_line_x=hit_hash_ix, hash_seg_line_y=hit_hash_iy, z=this_hit.z,
-                          time=this_hit.time, seg_ix=this_hit.seg_ix, rdrift=this_hit.rdrift, is_muon=this_hit.is_muon )
+            isig = Signal( hash_seg_line_x=hit_hash_ix, hash_seg_line_y=hit_hash_iy,
+                           x=this_hit.x, y=this_hit.y, z=this_hit.z,
+                           time=this_hit.time, seg_ix=this_hit.seg_ix, rdrift=this_hit.rdrift,
+                           is_muon=this_hit.is_muon )
             
             self.seg_lines['x'][hit_hash_ix].add_signal(isig)
             self.seg_lines['y'][hit_hash_iy].add_signal(isig)
