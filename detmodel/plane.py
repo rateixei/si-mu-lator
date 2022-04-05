@@ -28,7 +28,7 @@ class Plane:
     def __init__(self, type, z, width_x=10, width_y=10, width_t=10,
                           n_x_seg=10, n_y_seg=0, n_t_seg=10,
                           x_res=0, y_res=0, z_res=0, t_res=0,
-                          tilt=0, offset=0):
+                          tilt=0, offset=0, max_hits=0):
         ## type
         self.p_type = DetType(type)
 
@@ -40,6 +40,7 @@ class Plane:
         ## detector plane tilt and offset
         self.tilt = tilt
         self.offset = offset
+        self.max_hits = max_hits
 
         ## detector geometrical boundaries, assuming squares now
         self.sizes = {
@@ -201,10 +202,12 @@ class Plane:
         return 1
 
 
-    def add_noise(self, noise_rate_per_module):
+    def add_noise(self, noise_rate_per_module, randseed=42):
         ## add uniform random noise hits
         ## here we input noise_rate_per_module
         ## so to generate plane noise, we need to multiply noise_rate_per_module*n_segs
+        
+        np.random.seed(int(randseed + (self.z)))
         
         if self.p_type == DetType.MM:
             n_noise = int(np.random.poisson(noise_rate_per_module*len(self.segmentations['x'])))
@@ -263,6 +266,8 @@ class Plane:
     
         else:
             
+            ## This is overoptimistic and might cause problems, should check the impact of removing this
+            
             if this_hit.is_muon:
                 if self.seg_lines['x'][hit_hash_ix].is_sig and \
                     self.seg_lines['y'][hit_hash_iy].is_sig:
@@ -291,6 +296,8 @@ class Plane:
             isig_info = self.find_signal(ihit)
             if isig_info is not None:
                 out_signals.append(isig_info)
+                if self.max_hits > 0 and len(out_signals) == self.max_hits:
+                    break
 
         n_sigs = len(out_signals)
         

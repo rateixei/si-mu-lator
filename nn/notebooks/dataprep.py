@@ -3,73 +3,65 @@ import matplotlib as mpl
 from matplotlib import pyplot as plt
 import h5py
 
-def make_data_matrix(all_files, max_files=50):
+def make_data_matrix(all_files, max_files=50, masking99 = False, sort_by='none'):
     
     data = {}
-    signals_mu = []
-    signals_nomu = []
+    signals = []
+    sig_keys = []
 
     for ifile in range(min(max_files, len(all_files))):
         fname = all_files[ifile]
+        print(fname)
     
         this_file = h5py.File( fname, 'r' )
+        
+        if ifile == 0:
+            sig_keys = [ vv.decode("utf-8") for vv in np.array(this_file['signal_keys']) ]
+            print(sig_keys)
     
-        this_data = {}
-    
+        signals.append( np.array( this_file['signals'] ) )
+        
         for kk in this_file.keys():
-        
-            if kk not in data:
-                data[kk] = np.array( this_file[kk] )
-            elif 'ev_' in kk:
-                data[kk] = np.concatenate( [data[kk], np.array( this_file[kk] )] )
-            elif 'signals' in kk:
-                if 'NoMuon' in fname:
-                    signals_nomu.append( np.array( this_file[kk] ) )
+            if 'mu' in kk or '_n_' in kk:
+                if kk not in data:
+                    data[kk] = np.array( this_file[kk] )
                 else:
-                    signals_mu.append( np.array( this_file[kk] ) )
+                    data[kk] = np.concatenate( [data[kk], np.array( this_file[kk] )] )
     
-    n_signals_mu = len(signals_mu)
-    n_signals_nomu = len(signals_nomu)
+    max_hits = max( [ als.shape[1] for als in signals ] )
+    features = max( [ als.shape[2] for als in signals ] )
+    tot_evts = np.sum( [als.shape[0] for als in signals] )
     
-    max_hits = max( [ als.shape[1] for als in [*signals_mu, *signals_nomu] ] )
-    tot_evnts = np.sum( [ als.shape[0] for als in [*signals_mu, *signals_nomu] ] )
-    features = max( [ als.shape[2] for als in [*signals_mu, *signals_nomu] ] )
+    dmat = -99*np.ones((tot_evts, max_hits, features))
+    Y_mu = np.array(data['ev_mu_phi'] >= 0, dtype=int)
     
-    dmat = np.zeros((tot_evnts, max_hits, features))
-    Y_mu = np.zeros((tot_evnts))
-
     tot_add = 0
-    added_mu = 0
-    
-    for als in signals_mu:
-        this_add = als.shape[0]
-        dmat[added_mu:added_mu+this_add, :als.shape[1],:] = als[:]
-        added_mu += this_add
-        tot_add += this_add
+    for fevt in signals:
+        n_entries = fevt.shape[0]
+        dmat[tot_add:tot_add+n_entries,:,:] = fevt[:]
+        tot_add += n_entries
+        # for evt in fevt:
+            # hits_to_add = evt#[np.where(evt[:,sig_keys.index('is_muon')] > -990)][:]
+            
+            # if 'none' not in sort_by and sort_by in sig_keys:
+                # hits_to_add = hits_to_add[ np.argsort( hits_to_add[:,sig_keys.index(sort_by)] ) ]
+            
+            # dmat[tot_add, :hits_to_add.shape[0],:] = hits_to_add
+            # tot_add += 1
         
-    Y_mu[0:added_mu] = np.ones_like(Y_mu[0:added_mu])
-    added_nomu = 0
+    Y_hit = dmat[:,:,0]
     
-    for als in signals_nomu:
-        this_add = als.shape[0]
-        dmat[tot_add:tot_add+this_add, :als.shape[1],:] = als[:]
-        added_nomu += this_add
-        tot_add += this_add
-        
-    assert added_mu+added_nomu == tot_evnts
-    
-    Y_hit = dmat[:,:,10]
-    
-    #for masking -99
+#     if masking99:
+#         #for masking -99
 
-    for isig in range(dmat.shape[0]):
-        for jsig in range(dmat.shape[1]):
-            if dmat[isig,jsig,8] == 0:
-                dmat[isig,jsig] = np.full_like(dmat[isig,jsig], -99, dtype=int)
-                Y_hit[isig,jsig] = -99
+#         for isig in range(dmat.shape[0]):
+#             for jsig in range(dmat.shape[1]):
+#                 if dmat[isig,jsig,8] == 0:
+#                     dmat[isig,jsig] = np.full_like(dmat[isig,jsig], -99, dtype=int)
+#                     Y_hit[isig,jsig] = -99
                 
-    Y = np.empty((Y_hit.shape[0], Y_hit.shape[1]+1))
+    Y = np.empty((Y_hit.shape[0], Y_hit.shape[1]+1), dtype=int)
     Y[:,0] = Y_mu[:]
     Y[:,1:] = Y_hit[:]
     
-    return (dmat, Y, Y_mu, Y_hit)
+    return (data, dmat, Y, Y_mu, Y_hit, sig_keys)

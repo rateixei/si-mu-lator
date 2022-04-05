@@ -5,11 +5,11 @@ detector:
   ## distance: mm
 
   ## ns window
-  det_width_t: 250 
+  det_width_t: 100 
   ## window segmentation, 1 bunch crossing
-  det_n_t_seg: 25 
+  det_n_t_seg: 1 
   ## timing resolution in ns
-  det_t_res: 25 
+  det_t_res: 5 
 
   ## the pitch of the MM is about 0.45 mm, here we have a box of 10 strips
   det_width_x: 4.5 
@@ -18,6 +18,8 @@ detector:
   ## the "horizontal" size of the MM
   det_width_y: 426.7
   det_n_y_seg: 0
+
+  det_max_hits: 1
   
   planes:
     plane_1:

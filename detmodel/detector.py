@@ -38,7 +38,7 @@ class Detector:
 
         return mu_res
 
-    def add_noise(self, noise_type, noise_rate_per_module):
+    def add_noise(self, noise_type, noise_rate_per_module, randseed=42):
 #         print("-- Adding noise --")
         
         '''
@@ -48,7 +48,7 @@ class Detector:
              noise_rate_per_module (Hz) * p_width_t (ns) * 1e-9
         '''
         
-        if self.specs['det_width_t'] is 0:
+        if self.specs['det_width_t'] == 0:
                 print("det_width_t is set to 0, so you're trying to integrate noise over a window of 0 time, please specify time window")
                 sys.exit()
                 
@@ -57,11 +57,11 @@ class Detector:
             n_noise = noise_rate_per_module * self.specs['det_width_t'] * 1e-9
                        
             for p in self.planes:
-                p.add_noise(n_noise)
+                p.add_noise(n_noise, randseed=randseed)
         else:
             print("TBI")
 
-    def get_signals(self, iev=-1, summary=False):
+    def get_signals(self, summary=False):
 #         print("-- Getting signals --")
         signals = []
         keys = []
@@ -128,6 +128,8 @@ class Detector:
             p_z_res   = self.find_plane_par('z_res', p)
             p_t_res   = self.find_plane_par('t_res', p)
 
+            p_max_hits = self.find_plane_par('max_hits', p)
+
             if p_width_x == 0 or p_width_y == 0 or p_width_t == 0 \
                 or p_n_x_seg == 0 or p_n_t_seg == 0:
                 print("Plane information not correctly set")
@@ -146,6 +148,6 @@ class Detector:
             width_x=p_width_x, width_y=p_width_y, width_t=p_width_t,
             n_x_seg=p_n_x_seg, n_y_seg=p_n_y_seg, n_t_seg=p_n_t_seg,
             x_res=p_x_res, y_res=p_y_res, z_res=p_z_res, t_res=p_t_res,
-            tilt=p_tilt, offset=p_offset)
+            tilt=p_tilt, offset=p_offset, max_hits=p_max_hits)
 
             self.planes.append(p_i)
