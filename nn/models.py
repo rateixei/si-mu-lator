@@ -3,6 +3,7 @@ from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Layer, Masking, Input, Dense, concatenate
 from tensorflow.keras.layers import ReLU, BatchNormalization, Attention
 from tensorflow.keras.layers import BatchNormalization, Embedding, Lambda, TimeDistributed
+from tensorflow.keras.layers import LSTM
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 import tensorflow as tf
@@ -267,6 +268,80 @@ def muon_nn_selfatt_reg(input_shape, ll = 0.1):
     model.summary()
     
     my_loss = comp_loss(ll, input_shape[0]+1)
+    model.compile(loss=my_loss, optimizer='adam', metrics=[my_loss])
+    
+    return model
+
+def recurrent_model(input_shape):
+    
+    inputs = Input(shape=(input_shape[0], input_shape[1],), name="inputs")
+    
+    masked = Masking( mask_value=-99, name="masking_1")(inputs)
+    
+    hidden = BatchNormalization()(masked)
+    
+    hidden = LSTM(10, name='lstm')(hidden)
+    
+    hidden = Dense(20, activation='relu', name='dense_0')(hidden)
+    hidden = Dense(20, activation='relu', name='dense_1')(hidden)
+    hidden = Dense(20, activation='relu', name='dense_2')(hidden)
+    out = Dense(1, activation='sigmoid', name='output')(hidden)
+    
+    model = Model(inputs=inputs, outputs=out)
+    
+    model.summary()
+    
+    # my_loss = tf.keras.losses.BinaryCrossentropy()
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    
+    return model
+    
+    
+
+def muon_nn_selfatt_muonly(input_shape, ll = 0.1, attn_block=False):
+    
+    inputs = Input(shape=(input_shape[0], input_shape[1],), name="inputs")
+    
+    masked = Masking( mask_value=-99, name="masking_1")(inputs)
+    
+    masked = BatchNormalization()(masked)
+    
+    phi = TimeDistributed(Dense(50,activation='relu'),name=f"Phi_0_Dense")(masked)
+    phi = TimeDistributed(Dense(50,activation='relu'),name=f"Phi_1_Dense")(phi)
+    # phi = TimeDistributed(Dense(50,activation='relu'),name=f"Phi_2_Dense")(phi)
+    phi = TimeDistributed(Dense(50,activation='relu'),name=f"Phi_3_Dense")(phi)
+    
+    # query_value_attention_seq = Attention()([phi, phi])
+    query_value_attention_seq, attn_scores = Attention()([phi, phi], return_attention_scores=True)
+    
+    rho = TimeDistributed(Dense(50,activation='relu'),name=f"Rho_0_Dense")(query_value_attention_seq)
+    # rho = TimeDistributed(Dense(20,activation='relu'),name=f"Rho_1_Dense")(rho)
+    # rho = TimeDistributed(Dense(10,activation='relu'),name=f"Rho_2_Dense")(rho)
+    rho = TimeDistributed(Dense(1,activation='sigmoid'),name=f"Rho_Output")(rho)
+    all_rho = tf.keras.layers.Flatten()(rho)
+    
+    pool_query_value = Sum()(query_value_attention_seq)
+    
+    if attn_block:
+        pool_attn_scores = Sum()(attn_scores)
+        all_pool = tf.keras.layers.Concatenate(axis=1)([pool_query_value, pool_attn_scores])
+    else:
+        all_pool = pool_query_value
+        
+    all_pool = BatchNormalization()(all_pool)
+    
+    F = Dense(50, activation='relu', name='F_0_Dense')(all_pool)
+    F = Dense(20, activation='relu', name='F_1_Dense')(F)
+    F = Dense(10, activation='relu', name='F_2_Dense')(F)
+    total_output = Dense(1, activation='sigmoid', name='F_Output')(F)
+    
+    # total_output = tf.keras.layers.Concatenate(axis=1)([F, all_rho])
+    
+    model = Model(inputs=inputs, outputs=total_output)
+    
+    model.summary()
+    
+    my_loss = tf.keras.losses.BinaryCrossentropy()
     model.compile(loss=my_loss, optimizer='adam', metrics=[my_loss])
     
     return model

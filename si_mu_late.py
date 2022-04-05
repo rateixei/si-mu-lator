@@ -5,7 +5,7 @@ from detmodel.detector import Detector
 import multiprocessing
 import tqdm
 import time
-
+import sys
 import h5py
 
 import pandas
@@ -41,18 +41,19 @@ parser.add_argument('-r', '--randomseed', dest='randseed', type=int, default=42,
                        help='Set random seed')
     
 my_configs = parser.parse_args()
-
     
 my_detector = Detector()
 my_detector.read_card(my_configs.detcard)
 
-def run_event(iev):
-    np.random.seed(my_configs.randseed + iev)
+def run_event(randseed):
     
     my_detector.reset_planes()
     
     ## muon
     mu_config = None
+
+    np.random.seed(randseed)
+
     if my_configs.ismu:
         mu_x = 0
         if my_configs.muonx[0] < my_configs.muonx[1]:
@@ -71,10 +72,10 @@ def run_event(iev):
     
     ## background
     if my_configs.bkgr > 0:
-        my_detector.add_noise("constant", my_configs.bkgr)
+        my_detector.add_noise(my_configs.bkgr, randseed=randseed)
     
     ## signals
-    sigs_keys = my_detector.get_signals(iev)
+    sigs_keys = my_detector.get_signals()
     
     if sigs_keys is not None:
         return (sigs_keys[0], sigs_keys[1], mu_config)
@@ -85,28 +86,37 @@ def run_event(iev):
 def make_signal_matrix(res):
     
     evs = []
+   
+    max_sigs = []
+    ncols = -10
+    for iiev,iev in enumerate(res):
+        if iev.get() is not None:
+            max_sigs.append(iev.get()[0].shape[0])
+            if iiev == 0:
+                ncols = iev.get()[0].shape[1]
+            else:
+                assert ncols == iev.get()[0].shape[1]
 
-    ## get max number of hits
-    max_sigs = np.max( [ iev.get()[0].shape[0] for iev in res ] )
+    n_nonzero_sigs = len(max_sigs)
+    max_sigs = np.max(max_sigs)
     
-    ## assert that  dicts have the same number of columns
-    assert all(iev.get()[0].shape[1]==res[0].get()[0].shape[1] for iev in res)
-    ncols = res[0].get()[0].shape[1]
-
-    out_matrix = -99 * np.ones( ( len(res), max_sigs, ncols ) )
+    out_matrix = -99 * np.ones( ( n_nonzero_sigs, max_sigs, ncols ) )
     key = []
     mu_configs = []
-    for iiev,iev in enumerate(res):
-        this_res, this_key, muconf = iev.get()
-        if len(key) == 0:
-            key = this_key[:]
-        this_shape = this_res.shape
-        out_matrix[iiev][ :this_shape[0], : ] = this_res
-        mu_configs.append(muconf)
+    iiev = 0
+    for iev in res:
+        if iev.get() is not None:
+            this_res, this_key, muconf = iev.get()
+            if len(key) == 0:
+                key = this_key[:]
+            this_shape = this_res.shape
+            out_matrix[iiev][ :this_shape[0], : ] = this_res
+            mu_configs.append(muconf)
+            iiev += 1
     
     return(out_matrix, key, mu_configs)
 
-def make_event_dict(sig_mat, mu_configs):
+def make_event_dict(sig_mat, mu_configs, sig_keys):
     
     event_dict = {
         'n_signals': [],
@@ -120,10 +130,14 @@ def make_event_dict(sig_mat, mu_configs):
     
     for iev in range(sig_mat.shape[0]):
         
-        ## number of signals with z > 0
-        event_dict['n_signals'].append( np.sum(sig_mat[iev,:,3] > 0) ) 
-        ## number of signals with is_muon == True
-        event_dict['n_mu_signals'].append( np.sum(sig_mat[iev,:,0] == True) ) 
+        indx_hit_type = sig_keys.index('is_muon')
+
+        ## number of signals with is_muon that is not -99
+        event_dict['n_signals'].append( np.sum(sig_mat[iev,:,indx_hit_type] > -1) ) 
+
+        ## number of signals with is_muon == 1
+        event_dict['n_mu_signals'].append( np.sum(sig_mat[iev,:,indx_hit_type] == 1) ) 
+
         ## injected mu x
         if mu_configs[iev] is not None:
             event_dict['mu_x'].append( mu_configs[iev][0] )
@@ -147,44 +161,44 @@ def main():
     
     ncpu = multiprocessing.cpu_count()
     print(f"---> Using {ncpu} CPUs for parallelization")
-    
+    print(f"---> Using {my_configs.randseed} as random seed")
+    np.random.seed(my_configs.randseed)
+
     pool = multiprocessing.Pool(ncpu)
     pbar = tqdm.tqdm(total=my_configs.nevs)
 
     def update(*a):
         pbar.update()
 
+    #make array of random seeds
+    random_seeds = np.random.randint(1, 2**30, size=my_configs.nevs, dtype=int)
+    
     results = []
     for i in range(pbar.total):
-        this_res = pool.apply_async(run_event, args=(i,), callback=update)
-        if this_res is not None:
-            results.append(this_res)
+        this_res = pool.apply_async(run_event, args=(random_seeds[i],), callback=update)
+        results.append(this_res)
         
     pool.close()
     pool.join()
 
-    if len(results) < 1:
+    if len(results) < 1 or results is None:
         print("No results found...")
         sys.exit()
   
     sig_matrix, sig_keys, mu_confs = make_signal_matrix(results)
-    ev_dict = make_event_dict(sig_matrix, mu_confs)
+    ev_dict = make_event_dict(sig_matrix, mu_confs, sig_keys)
     
     out_file_name = my_configs.outf.replace('.h5', 
                         f'_Rnd{my_configs.randseed}.h5')
 
     with h5py.File(out_file_name, 'w') as hf:
         hf.create_dataset("signals", data=sig_matrix)
-        hf.create_dataset("signal_keys", data=np.array(mu_confs))
+        dt = h5py.special_dtype(vlen=str) 
+        feature_names = np.array(sig_keys, dtype=dt) 
+        hf.create_dataset("signal_keys", data=feature_names )
         for kk in ev_dict:
             hf.create_dataset('ev_'+kk, data=np.array(ev_dict[kk]) )
     print("Saved!")
-        
-
-
-#     for i in range(my_configs.nevs):
-#         a = run_event(i)
-#         print(a)
 
 if __name__== "__main__" :
     main()
