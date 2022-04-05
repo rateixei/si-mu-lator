@@ -28,7 +28,7 @@ class Plane:
     def __init__(self, type, z, width_x=10, width_y=10, width_t=10,
                           n_x_seg=10, n_y_seg=0, n_t_seg=10,
                           x_res=0, y_res=0, z_res=0, t_res=0,
-                          tilt=0, offset=0, max_hits=0):
+                          tilt=0, offset=0, max_hits=0, sig_eff=0):
         ## type
         self.p_type = DetType(type)
 
@@ -44,6 +44,8 @@ class Plane:
         ## detector plane tilt and offset
         self.tilt = tilt
         self.offset = offset
+        self.max_hits = max_hits
+        self.sig_eff = sig_eff
 
         ## detector geometrical boundaries, assuming squares now
         self.sizes = {
@@ -148,9 +150,17 @@ class Plane:
         else:
             return pos
 
-    def pass_muon(self, muon):
-        ## find intersection of muon and detector plane
+    def pass_muon(self, muon, randseed=42):
 
+        ## apply signal efficiency
+        if self.sig_eff > 0:
+            np.random.seed(int(randseed + 10*(self.z)))
+            rnd_number_eff = np.random.uniform(0.0, 1.0)
+            if rnd_number_eff > self.sig_eff:
+                ## missed muon signal
+                return 0
+
+        ## find intersection of muon and detector plane
         pmu_intersect = self.plane.intersection(muon.line)
 
         if len(pmu_intersect) == 0 or len(pmu_intersect) > 1:

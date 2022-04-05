@@ -39,18 +39,14 @@ class Detector:
             for p in self.planes:
                 p.clear_hits()
 
-    def add_muon(self, mu_x, mu_y, mu_theta, mu_phi=0, mu_time=0):
+    def add_muon(self, mu_x, mu_y, mu_theta, mu_phi=0, mu_time=0, randseed=42):
 #         print("-- Adding muon --")
         self.has_mu = 1
         self.muinit = {'x': mu_x, 'y': mu_y, 'theta': mu_theta, 'phi': mu_phi, 'time': mu_time}
         self.mymu = Muon(x=mu_x, y=mu_y, theta=mu_theta, phi=mu_phi, time=mu_time)
 
-        mu_res = []
         for p in self.planes:
-            p_res = p.pass_muon(self.mymu)
-            mu_res.append(p_res)
-
-        return mu_res
+            mu_code = p.pass_muon(self.mymu, randseed=randseed)
 
     def add_noise(self, noise_scale, randseed=42):
 #         print("-- Adding noise --")
@@ -116,6 +112,7 @@ class Detector:
             p_noise_rate = self.find_plane_par('noise_rate', p)
 
             p_max_hits = self.find_plane_par('max_hits', p)
+            p_sig_eff  = self.find_plane_par('sig_eff', p)
 
             if p_width_x == 0 or p_width_y == 0 or p_width_t == 0 \
                 or p_n_x_seg == 0 or p_n_t_seg == 0:
@@ -135,7 +132,7 @@ class Detector:
             width_x=p_width_x, width_y=p_width_y, width_t=p_width_t,
             n_x_seg=p_n_x_seg, n_y_seg=p_n_y_seg, n_t_seg=p_n_t_seg,
             x_res=p_x_res, y_res=p_y_res, z_res=p_z_res, t_res=p_t_res,
-            tilt=p_tilt, offset=p_offset, max_hits=p_max_hits)
+            tilt=p_tilt, offset=p_offset, max_hits=p_max_hits, sig_eff=p_sig_eff)
 
             p_i.set_noise(p_noise_rate, p_noise_type)
 
