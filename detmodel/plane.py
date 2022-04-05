@@ -28,7 +28,7 @@ class Plane:
     def __init__(self, type, z, width_x=10, width_y=10, width_t=10,
                           n_x_seg=10, n_y_seg=0, n_t_seg=10,
                           x_res=0, y_res=0, z_res=0, t_res=0,
-                          tilt=0, offset=0):
+                          tilt=0, offset=0, max_hits=0):
         ## type
         self.p_type = DetType(type)
 
@@ -36,6 +36,10 @@ class Plane:
         self.z = z
         self.point = sympy.Point3D(0,0,z)
         self.plane = sympy.Plane(self.point, normal_vector=(0,0,1))
+
+        ## noise info
+        self.noise_rate = 0
+        self.noise_type = 'constant'
 
         ## detector plane tilt and offset
         self.tilt = tilt
@@ -200,10 +204,32 @@ class Plane:
 
         return 1
 
+    def set_noise(self, noise_rate, noise_type='constant'):
+        self.noise_rate = noise_rate
+        self.noise_type = noise_type
 
-    def add_noise(self, n_noise):
-        ## add uniform random noise hits
+    def add_noise(self, noise_scale, randseed=42):
 
+        '''
+        p_width_t is the time window in which to integrate the signal (in nano seconds)
+        therefore, the number of noise hits is:
+        
+             noise_scale * noise_rate per strip (Hz) * number of strips * p_width_t (ns) * 1e-9
+        '''
+
+        if 'constant' not in self.noise_type:
+            print('Only support constant noise now')
+            return -1
+        
+        if self.sizes['t'] < 1e-15:
+            print('Time integration width must be larger than 0')
+            return -1
+
+        n_noise_init = noise_scale * (len(self.segmentations['x']) -1) \
+                        * self.noise_rate * p.sizes['t'] * 1e-9
+
+        np.random.seed(int(randseed + (self.z)))
+        n_noise = np.random.poisson(n_noise_init)
         noise_x = np.random.uniform(-0.5*self.sizes['x'], 0.5*self.sizes['x'], int(n_noise))
         noise_y = np.random.uniform(-0.5*self.sizes['y'], 0.5*self.sizes['y'], int(n_noise))
         noise_z = self.z*np.ones(int(n_noise))
@@ -283,9 +309,13 @@ class Plane:
             print("Total number of hits:", len(self.hits) )
     
         for ihit in self.hits:
+            
             isig_info = self.find_signal(ihit)
             if isig_info is not None:
                 out_signals.append(isig_info)
+
+            if self.max_hits > 0 and len(out_signals) == self.max_hits:
+                    break
 
         n_sigs = len(out_signals)
         
