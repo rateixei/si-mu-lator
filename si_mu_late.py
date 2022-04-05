@@ -5,7 +5,7 @@ from detmodel.detector import Detector
 import multiprocessing
 import tqdm
 import time
-
+import sys
 import h5py
 
 import pandas
@@ -72,7 +72,7 @@ def run_event(randseed):
     
     ## background
     if my_configs.bkgr > 0:
-        my_detector.add_noise("constant", my_configs.bkgr, randseed=randseed)
+        my_detector.add_noise(my_configs.bkgr, randseed=randseed)
     
     ## signals
     sigs_keys = my_detector.get_signals()
@@ -176,6 +176,7 @@ def main():
     results = []
     for i in range(pbar.total):
         this_res = pool.apply_async(run_event, args=(random_seeds[i],), callback=update)
+        results.append(this_res)
         
     pool.close()
     pool.join()

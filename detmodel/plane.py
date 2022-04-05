@@ -236,7 +236,7 @@ class Plane:
             return -1
 
         n_noise_init = noise_scale * (len(self.segmentations['x']) -1) \
-                        * self.noise_rate * p.sizes['t'] * 1e-9
+                        * self.noise_rate * self.sizes['t'] * 1e-9
 
         np.random.seed(int(randseed + (self.z)))
         n_noise = np.random.poisson(n_noise_init)
