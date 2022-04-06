@@ -67,12 +67,12 @@ def run_event(randseed):
         if my_configs.muona[0] < my_configs.muona[1]:
             mu_a = np.random.uniform(low=my_configs.muona[0], high=my_configs.muona[1])
         
-        my_detector.add_muon(mu_x=mu_x, mu_y=mu_y, mu_theta=mu_a, mu_phi=0, mu_time=0)
+        my_detector.add_muon(mu_x=mu_x, mu_y=mu_y, mu_theta=mu_a, mu_phi=0, mu_time=0, randseed=randseed)
         mu_config = [mu_x, mu_y, mu_a, 0, 0]
     
     ## background
     if my_configs.bkgr > 0:
-        my_detector.add_noise(my_configs.bkgr, randseed=randseed)
+        my_detector.add_noise(my_configs.bkgr, randseed=randseed+1)
     
     ## signals
     sigs_keys = my_detector.get_signals()
