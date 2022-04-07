@@ -34,13 +34,11 @@ class Detector:
             return 0
 
     def reset_planes(self):
-#         print("-- Resetting planes --")
         if len(self.planes) > 0:
             for p in self.planes:
                 p.clear_hits()
 
     def add_muon(self, mu_x, mu_y, mu_theta, mu_phi=0, mu_time=0, randseed=42):
-#         print("-- Adding muon --")
         self.has_mu = 1
         self.muinit = {'x': mu_x, 'y': mu_y, 'theta': mu_theta, 'phi': mu_phi, 'time': mu_time}
         self.mymu = Muon(x=mu_x, y=mu_y, theta=mu_theta, phi=mu_phi, time=mu_time)
@@ -49,15 +47,22 @@ class Detector:
             mu_code = p.pass_muon(self.mymu, randseed=randseed)
 
     def add_noise(self, noise_scale, randseed=42):
-#         print("-- Adding noise --")
         
         for p in self.planes:
             p.add_noise(noise_scale, randseed=randseed)
 
-    def get_signals(self, summary=False):
-#         print("-- Getting signals --")
+    def get_signals(self, minhits=1, summary=False):
         signals = []
         keys = []
+
+        ## first, check how many hits we have -- only count one per plane
+        tot_hits = 0
+        for p in enumerate(self.planes):
+            n_hits = len(p.hits)
+            tot_hits += int( n_hits > 0 )
+            
+        if tot_hits < minhits:
+            return None
         
         for ip,p in enumerate(self.planes):
             p_return = p.return_signal(summary)

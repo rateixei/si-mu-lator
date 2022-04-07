@@ -19,6 +19,8 @@ parser.add_argument('-d', '--detector', dest='detcard', type=str, required=True,
                     help='Detector card')
 parser.add_argument('-n', '--nevents', dest='nevs', type=int, required=True,
                     help='Number of events')
+parser.add_argument('--minhits', dest='min_n_hits', type=int, required=False, default=1,
+                    help='Minimum number of hits per event over all detector')
 parser.add_argument('-o', '--outfile', dest='outf', type=str, required=True,
                     help='Out h5 file')
     
@@ -75,7 +77,7 @@ def run_event(randseed):
         my_detector.add_noise(my_configs.bkgr, randseed=randseed+1)
     
     ## signals
-    sigs_keys = my_detector.get_signals()
+    sigs_keys = my_detector.get_signals(my_configs.min_n_hits)
     
     if sigs_keys is not None:
         return (sigs_keys[0], sigs_keys[1], mu_config)
