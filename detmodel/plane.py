@@ -244,11 +244,11 @@ class Plane:
 
         n_noise_init = noise_scale * (len(self.segmentations['x']) -1) \
                         * self.noise_rate * self.sizes['t'] * 1e-9
+        if override_n_noise_per_plane > 0:
+            n_noise_init = override_n_noise_per_plane
 
         np.random.seed(int(randseed + (self.z)))
         n_noise = np.random.poisson(n_noise_init)
-        if override_n_noise_per_plane > 0:
-            n_noise = override_n_noise_per_plane
 
         noise_x = np.random.uniform(-0.5*self.sizes['x'], 0.5*self.sizes['x'], int(n_noise))
         noise_y = np.random.uniform(-0.5*self.sizes['y'], 0.5*self.sizes['y'], int(n_noise))
