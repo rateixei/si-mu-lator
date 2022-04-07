@@ -23,7 +23,7 @@ detector:
 # default parameters for MM below; sTGC parameters entered in each plane below
   det_width_t: 250 ## ns window
   det_n_t_seg: 25 ## window segmentation
-  det_t_res: 100 ## timing resolution in ns
+  det_t_res: 50 ## timing resolution in ns
 
   det_sig_eff: 0.95
 
