@@ -225,7 +225,7 @@ class Plane:
         self.noise_rate = noise_rate
         self.noise_type = noise_type
 
-    def add_noise(self, noise_scale, randseed=42):
+    def add_noise(self, noise_scale, override_n_noise_per_plane=-1, randseed=42):
 
         '''
         p_width_t is the time window in which to integrate the signal (in nano seconds)
@@ -247,6 +247,9 @@ class Plane:
 
         np.random.seed(int(randseed + (self.z)))
         n_noise = np.random.poisson(n_noise_init)
+        if override_n_noise_per_plane > 0:
+            n_noise = override_n_noise_per_plane
+
         noise_x = np.random.uniform(-0.5*self.sizes['x'], 0.5*self.sizes['x'], int(n_noise))
         noise_y = np.random.uniform(-0.5*self.sizes['y'], 0.5*self.sizes['y'], int(n_noise))
         noise_z = self.z*np.ones(int(n_noise))

@@ -21,6 +21,8 @@ parser.add_argument('-n', '--nevents', dest='nevs', type=int, required=True,
                     help='Number of events')
 parser.add_argument('--minhits', dest='min_n_hits', type=int, required=False, default=1,
                     help='Minimum number of hits per event over all detector')
+parser.add_argument('--override-n-noise-hits-per-event', dest='override_n_noise_hits_per_event', type=int, required=False, default=-1,
+                    help='Override noise setting, requires exact number of noise hits in an event')                    
 parser.add_argument('-o', '--outfile', dest='outf', type=str, required=True,
                     help='Out h5 file')
     
@@ -74,7 +76,7 @@ def run_event(randseed):
     
     ## background
     if my_configs.bkgr > 0:
-        my_detector.add_noise(my_configs.bkgr, randseed=randseed+1)
+        my_detector.add_noise(my_configs.bkgr, override_n_noise_hits_per_event=override_n_noise_hits_per_event, randseed=randseed+1)
     
     ## signals
     sigs_keys = my_detector.get_signals(my_configs.min_n_hits)

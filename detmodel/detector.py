@@ -46,10 +46,11 @@ class Detector:
         for p in self.planes:
             mu_code = p.pass_muon(self.mymu, randseed=randseed)
 
-    def add_noise(self, noise_scale, randseed=42):
+    def add_noise(self, noise_scale, override_n_noise_hits_per_event=-1, randseed=42):
         
+        override_n_noise_per_plane = float(override_n_noise_hits_per_event)/float(len(self.planes))
         for p in self.planes:
-            p.add_noise(noise_scale, randseed=randseed)
+            p.add_noise(noise_scale, override_n_noise_per_plane, randseed=randseed)
 
     def get_signals(self, minhits=1, summary=False):
         signals = []
@@ -60,7 +61,7 @@ class Detector:
         for p in enumerate(self.planes):
             n_hits = len(p.hits)
             tot_hits += int( n_hits > 0 )
-            
+
         if tot_hits < minhits:
             return None
         
