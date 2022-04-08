@@ -76,7 +76,8 @@ def run_event(randseed):
     
     ## background
     if my_configs.bkgr > 0:
-        my_detector.add_noise(my_configs.bkgr, override_n_noise_hits_per_event=override_n_noise_hits_per_event, randseed=randseed+1)
+        my_detector.add_noise(my_configs.bkgr, override_n_noise_hits_per_event=my_configs.override_n_noise_hits_per_event, 
+                                randseed=randseed+1)
     
     ## signals
     sigs_keys = my_detector.get_signals(my_configs.min_n_hits)
@@ -96,10 +97,14 @@ def make_signal_matrix(res):
     for iiev,iev in enumerate(res):
         if iev.get() is not None:
             max_sigs.append(iev.get()[0].shape[0])
-            if iiev == 0:
+            if ncols == -10:
                 ncols = iev.get()[0].shape[1]
             else:
-                assert ncols == iev.get()[0].shape[1]
+                try:
+                    assert ncols == iev.get()[0].shape[1]
+                except AssertionError:
+                    print('Got something wrong with the number of columns in this event.', ncols, iev.get()[0].shape )
+                    sys.exit()
 
     n_nonzero_sigs = len(max_sigs)
     max_sigs = np.max(max_sigs)
@@ -167,6 +172,9 @@ def main():
     print(f"---> Using {ncpu} CPUs for parallelization")
     print(f"---> Using {my_configs.randseed} as random seed")
     np.random.seed(my_configs.randseed)
+
+    run_event(my_configs.randseed)
+    sys.exit()
 
     pool = multiprocessing.Pool(ncpu)
     pbar = tqdm.tqdm(total=my_configs.nevs)
