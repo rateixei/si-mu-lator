@@ -153,18 +153,12 @@ class Plane:
     def pass_muon(self, muon, randseed=42):
         np.random.seed(int(randseed + 10*(self.z)))
 
-        print("Passing muon")
         ## apply signal efficiency
         if self.sig_eff > 0:
-            print("applying efficiency")
-            
             rnd_number_eff = np.random.uniform(0.0, 1.0)
-            print("random number:", rnd_number_eff, self.sig_eff)
             if rnd_number_eff > self.sig_eff:
-                print("Efficiency check failed....")
                 return 0 ## missed muon signal
 
-        print("Continuing with passing the muon...")
         ## find intersection of muon and detector plane
         pmu_intersect = self.plane.intersection(muon.line)
 
@@ -178,8 +172,6 @@ class Plane:
         mu_ip_y = self.smear(float(intersection_point.y), 'y')
         mu_ip_z = self.smear(float(intersection_point.z), 'z')
         mu_ip_t = self.smear(muon.time, 't')
-        print("intersection point:", intersection_point.x, intersection_point.y, intersection_point.z, muon.time)
-        print("smeared point:", mu_ip_x, mu_ip_y, mu_ip_z, mu_ip_t)
 
         ## if muon is outside the detector fiducial volume
         ## or outside the time window, return 0

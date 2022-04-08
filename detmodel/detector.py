@@ -58,7 +58,7 @@ class Detector:
 
         ## first, check how many hits we have -- only count one per plane
         tot_hits = 0
-        for p in enumerate(self.planes):
+        for p in self.planes:
             n_hits = len(p.hits)
             tot_hits += int( n_hits > 0 )
 
