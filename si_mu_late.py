@@ -19,6 +19,10 @@ parser.add_argument('-d', '--detector', dest='detcard', type=str, required=True,
                     help='Detector card')
 parser.add_argument('-n', '--nevents', dest='nevs', type=int, required=True,
                     help='Number of events')
+parser.add_argument('--minhits', dest='min_n_hits', type=int, required=False, default=1,
+                    help='Minimum number of hits per event over all detector')
+parser.add_argument('--override-n-noise-hits-per-event', dest='override_n_noise_hits_per_event', type=int, required=False, default=-1,
+                    help='Override noise setting, requires exact number of noise hits in an event')                    
 parser.add_argument('-o', '--outfile', dest='outf', type=str, required=True,
                     help='Out h5 file')
     
@@ -67,15 +71,15 @@ def run_event(randseed):
         if my_configs.muona[0] < my_configs.muona[1]:
             mu_a = np.random.uniform(low=my_configs.muona[0], high=my_configs.muona[1])
         
-        my_detector.add_muon(mu_x=mu_x, mu_y=mu_y, mu_theta=mu_a, mu_phi=0, mu_time=0)
+        my_detector.add_muon(mu_x=mu_x, mu_y=mu_y, mu_theta=mu_a, mu_phi=0, mu_time=0, randseed=randseed)
         mu_config = [mu_x, mu_y, mu_a, 0, 0]
     
     ## background
     if my_configs.bkgr > 0:
-        my_detector.add_noise(my_configs.bkgr, randseed=randseed)
+        my_detector.add_noise(my_configs.bkgr, override_n_noise_hits_per_event=override_n_noise_hits_per_event, randseed=randseed+1)
     
     ## signals
-    sigs_keys = my_detector.get_signals()
+    sigs_keys = my_detector.get_signals(my_configs.min_n_hits)
     
     if sigs_keys is not None:
         return (sigs_keys[0], sigs_keys[1], mu_config)
