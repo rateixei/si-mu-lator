@@ -76,7 +76,8 @@ def run_event(randseed):
     
     ## background
     if my_configs.bkgr > 0:
-        my_detector.add_noise(my_configs.bkgr, override_n_noise_hits_per_event=my_configs.override_n_noise_hits_per_event, 
+        my_detector.add_noise(my_configs.bkgr, 
+        override_n_noise_hits_per_event=my_configs.override_n_noise_hits_per_event, 
                                 randseed=randseed+1)
     
     ## signals
@@ -172,9 +173,6 @@ def main():
     print(f"---> Using {ncpu} CPUs for parallelization")
     print(f"---> Using {my_configs.randseed} as random seed")
     np.random.seed(my_configs.randseed)
-
-    run_event(my_configs.randseed)
-    sys.exit()
 
     pool = multiprocessing.Pool(ncpu)
     pbar = tqdm.tqdm(total=my_configs.nevs)
