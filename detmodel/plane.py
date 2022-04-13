@@ -151,14 +151,13 @@ class Plane:
             return pos
 
     def pass_muon(self, muon, randseed=42):
+        np.random.seed(int(randseed + 10*(self.z)))
 
         ## apply signal efficiency
         if self.sig_eff > 0:
-            np.random.seed(int(randseed + 10*(self.z)))
             rnd_number_eff = np.random.uniform(0.0, 1.0)
             if rnd_number_eff > self.sig_eff:
-                ## missed muon signal
-                return 0
+                return 0 ## missed muon signal
 
         ## find intersection of muon and detector plane
         pmu_intersect = self.plane.intersection(muon.line)
@@ -218,7 +217,7 @@ class Plane:
         self.noise_rate = noise_rate
         self.noise_type = noise_type
 
-    def add_noise(self, noise_scale, randseed=42):
+    def add_noise(self, noise_scale, override_n_noise_per_plane=-1, randseed=42):
 
         '''
         p_width_t is the time window in which to integrate the signal (in nano seconds)
@@ -237,9 +236,12 @@ class Plane:
 
         n_noise_init = noise_scale * (len(self.segmentations['x']) -1) \
                         * self.noise_rate * self.sizes['t'] * 1e-9
+        if override_n_noise_per_plane > 0:
+            n_noise_init = override_n_noise_per_plane
 
         np.random.seed(int(randseed + (self.z)))
         n_noise = np.random.poisson(n_noise_init)
+
         noise_x = np.random.uniform(-0.5*self.sizes['x'], 0.5*self.sizes['x'], int(n_noise))
         noise_y = np.random.uniform(-0.5*self.sizes['y'], 0.5*self.sizes['y'], int(n_noise))
         noise_z = self.z*np.ones(int(n_noise))

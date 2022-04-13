@@ -10,11 +10,11 @@
 #####
 
 detector:
-  name: ATLASMicroMegaRoad
+  name: ATLASMicroMegaVMM
 
-  ## the pitch of the MM is about 0.45 mm, here we have a box of 10 strips
-  det_width_x: 4.5 
-  det_n_x_seg: 10
+  ## the pitch of the MM is about 0.45 mm, here we have a box of 64 strips
+  det_width_x: 28.8
+  det_n_x_seg: 64
   
   ## the "horizontal" size of the MM
   det_width_y: 426.7
@@ -44,28 +44,32 @@ detector:
     plane_3:
       z: 7585.7
       tilt: 0.02618 ## 1.5 degrees
-      max_hits: 1
+      n_x_seg: 128
+      max_hits: 2
       noise_rate: 70000
       type: mm
 
     plane_4:
       z: 7597.1
       tilt: -0.02618
-      max_hits: 1
+      n_x_seg: 128
+      max_hits: 2
       noise_rate: 70000
       type: mm
 
     plane_5:
       z: 7683.5
       tilt: 0.02618
-      max_hits: 1
+      n_x_seg: 128
+      max_hits: 2
       noise_rate: 70000
       type: mm
 
     plane_6:
       z: 7695.0
       tilt: -0.02618
-      max_hits: 1
+      n_x_seg: 128
+      max_hits: 2
       noise_rate: 70000
       type: mm
 
