@@ -17,22 +17,27 @@ detector:
   planes:
     plane_1:
       z: 15
+      noise_rate: 150000
       type: mdt
     plane_2:
       z: 41
       offset: 15 ## tube layers are staggered by half a tube
+      noise_rate: 150000
       type: mdt
     plane_3:
       z: 67
+      noise_rate: 150000
       type: mdt
     plane_4:
       z: 267
+      noise_rate: 150000
       type: mdt
     plane_5:
       z: 293
-      type: mdt
+      noise_rate: 150000
       offset: 15
       type: mdt
     plane_6:
       z: 319
+      noise_rate: 150000
       type: mdt
