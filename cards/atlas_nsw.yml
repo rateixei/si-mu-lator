@@ -28,7 +28,7 @@ detector:
     plane_1:
       z: 7460.5
       offset: 1.6  ## staggering by half strip pitch
-      width_t: 25  ## 25 ns
+      width_t: 75  ## 75 ns
       n_t_seg: 1
       n_x_seg: 36
       x_res: 0.2   ## 200 micron spatial resolution
@@ -37,7 +37,7 @@ detector:
 
     plane_2:
       z: 7465.6
-      width_t: 25
+      width_t: 75
       n_t_seg: 1
       n_x_seg: 36
       x_res: 0.2
@@ -47,7 +47,7 @@ detector:
     plane_3:
       z: 7482.4
       offset: 1.6
-      width_t: 25
+      width_t: 75
       n_t_seg: 1
       n_x_seg: 36
       x_res: 0.2
@@ -56,7 +56,7 @@ detector:
 
     plane_4:
       z: 7487.5
-      width_t: 25
+      width_t: 75
       n_t_seg: 1
       n_x_seg: 36
       x_res: 0.2
@@ -117,7 +117,7 @@ detector:
 
     plane_13:
       z: 7794.5
-      width_t: 25
+      width_t: 75
       n_t_seg: 1
       n_x_seg: 36
       x_res: 0.2
@@ -127,7 +127,7 @@ detector:
     plane_14:
       z: 7799.6
       offset: 1.6
-      width_t: 25
+      width_t: 75
       n_t_seg: 1
       n_x_seg: 36
       x_res: 0.2
@@ -136,7 +136,7 @@ detector:
 
     plane_15:
       z: 7816.4
-      width_t: 25
+      width_t: 75
       n_t_seg: 1
       n_x_seg: 36
       x_res: 0.2
@@ -145,7 +145,7 @@ detector:
 
     plane_16:
       z: 7821.5
-      width_t: 25
+      width_t: 75
       n_t_seg: 1
       offset: 1.6
       n_x_seg: 36
