@@ -14,6 +14,7 @@ detector:
   det_n_x_seg: 10
   det_n_y_seg: 0
   det_t_res: 5 ## timing resolution in ns
+  det_sig_eff: 0.95
   planes:
     plane_1:
       z: 15
