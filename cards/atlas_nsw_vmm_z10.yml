@@ -1,9 +1,8 @@
 ##### dimensions
 ##
-## Detector envelope starts at z = 7439 mm for large sectors
+## Detector envelope starts at z = 10 mm for large sectors in this implementation
 ## Trigger tower (sTGC logical pads) size 4 cm x 4 cm
-## Choose a detector box that can accommodate incidence angle for R near 1100 mm
-## Choose size to contain a multiple of 64 MM strips and 9 sTGC strips (~3/4 trigger tower size)
+## Choose size to contain 1 VMM, i.e. 64 MM strips, and 9 sTGC strips (~3/4 trigger tower size)
 ## Consider large sector
 ## The strip pitch x is 0.450 mm (large sector MM) and 3.2 mm (sTGC)
 ## 
@@ -12,144 +11,153 @@
 detector:
   name: ATLASNewSmallWheel
 
-  det_width_x: 115.2  ## 256 (36) times MM (sTGC) strip pitch
-  det_width_y: 115.2
+  det_width_x: 28.8  ## 64 (9) times MM (sTGC) strip pitch
+  det_width_y: 28.8
 
 # default parameters for MM below; sTGC parameters entered in each plane below
-  det_width_t: 250 ## ns window
+  det_width_t: 200 ## ns window
   det_n_t_seg: 25 ## window segmentation
-  det_n_x_seg: 256
+  det_n_x_seg: 64
   det_n_y_seg: 0
-  def_x_res: 0.2 ## 200 micron spatial resolution
-  det_t_res: 100 ## timing resolution in ns
+  det_t_res:  50 ## timing resolution in ns
+
+  det_sig_eff: 0.95
 
   planes:
 
     plane_1:
-      z: 7460.5
+      z: 10.5
       offset: 1.6  ## staggering by half strip pitch
       width_t: 75  ## 75 ns
       n_t_seg: 1
-      n_x_seg: 36
+      n_x_seg: 9
       x_res: 0.2   ## 200 micron spatial resolution
+      t_res:   5   ## timing resolution in ns
       noise_rate: 336000
       type: stgc
 
     plane_2:
-      z: 7465.6
+      z: 15.6
       width_t: 75
       n_t_seg: 1
-      n_x_seg: 36
+      n_x_seg: 9
       x_res: 0.2
+      t_res:   5
       noise_rate: 336000
       type: stgc
 
     plane_3:
-      z: 7482.4
+      z: 32.4
       offset: 1.6
       width_t: 75
       n_t_seg: 1
-      n_x_seg: 36
+      n_x_seg: 9
       x_res: 0.2
+      t_res:   5
       noise_rate: 336000
       type: stgc
 
     plane_4:
-      z: 7487.5
+      z: 37.5
       width_t: 75
       n_t_seg: 1
-      n_x_seg: 36
+      n_x_seg: 9
       x_res: 0.2
+      t_res:   5
       noise_rate: 336000
       type: stgc
 
     plane_5:
-      z: 7552.5
+      z: 102.5
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_6:
-      z: 7564.0
+      z: 114.0
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_7:
-      z: 7585.7
+      z: 135.7
       tilt: 0.02618 ## 1.5 degrees
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_8:
-      z: 7597.1
+      z: 147.1
       tilt: -0.02618
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_9:
-      z: 7683.5
+      z: 233.5
       tilt: 0.02618
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_10:
-      z: 7695.0
+      z: 245.0
       tilt: -0.02618
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_11:
-      z: 7716.7
+      z: 266.7
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_12:
-      z: 7728.1
+      z: 278.1
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_13:
-      z: 7794.5
+      z: 344.5
       width_t: 75
       n_t_seg: 1
-      n_x_seg: 36
+      n_x_seg: 9
       x_res: 0.2
+      t_res:   5
       noise_rate: 336000
       type: stgc
 
     plane_14:
-      z: 7799.6
+      z: 349.6
       offset: 1.6
       width_t: 75
       n_t_seg: 1
-      n_x_seg: 36
+      n_x_seg: 9
       x_res: 0.2
+      t_res:   5
       noise_rate: 336000
       type: stgc
 
     plane_15:
-      z: 7816.4
+      z: 366.4
       width_t: 75
       n_t_seg: 1
-      n_x_seg: 36
+      n_x_seg: 9
       x_res: 0.2
+      t_res:   5
       noise_rate: 336000
       type: stgc
 
     plane_16:
-      z: 7821.5
+      z: 371.5
       width_t: 75
       n_t_seg: 1
       offset: 1.6
-      n_x_seg: 36
+      n_x_seg: 9
       x_res: 0.2
+      t_res:   5
       noise_rate: 336000
       type: stgc
       

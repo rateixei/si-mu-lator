@@ -12,7 +12,7 @@ class Hit:
         self.is_muon = is_muon
     
     def point(self):
-        return sympy.Point3D(self.x, self.y, self.z)
+        return sympy.Point3D(self.x, self.y, self.z, evaluate=False)
     
     def print(self):
         hit_info = 'Hit information:\n\t'

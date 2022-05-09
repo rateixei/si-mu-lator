@@ -4,6 +4,7 @@ from enum import Enum
 from detmodel.hit import Hit
 from detmodel.signal import Signal, Segment
 from detmodel.muon import Muon
+from detmodel import util
 
 class DetType(Enum):
     MM   = 'mm'
@@ -34,7 +35,7 @@ class Plane:
 
         ## geometry
         self.z = z
-        self.point = sympy.Point3D(0,0,z)
+        self.point = sympy.Point3D(0,0,z,evaluate=False)
         self.plane = sympy.Plane(self.point, normal_vector=(0,0,1))
 
         ## noise info
@@ -81,13 +82,13 @@ class Plane:
         self.seg_lines = {'x':[], 'y':[]}
         
         for this_x_center in self.seg_mids['x']:
-            this_p1 = sympy.Point3D(this_x_center, 0, self.z)
-            this_p2 = sympy.Point3D(this_x_center + 0.5*width_y*np.tan(tilt), 0.5*width_y, self.z )
+            this_p1 = sympy.Point3D(this_x_center, 0, self.z, evaluate=False)
+            this_p2 = sympy.Point3D(this_x_center + 0.5*width_y*np.tan(tilt), 0.5*width_y, self.z, evaluate=False)
             self.seg_lines['x'].append(Segment( sympy.Line3D(this_p1, this_p2), coord='x', z=self.z ))
             
         for this_y_center in self.seg_mids['y']:
-            this_p1 = sympy.Point3D(0, this_y_center, self.z)
-            this_p2 = sympy.Point3D(0.5*width_x, this_y_center, self.z )
+            this_p1 = sympy.Point3D(0, this_y_center, self.z, evaluate=False)
+            this_p2 = sympy.Point3D(0.5*width_x, this_y_center, self.z, evaluate=False)
             self.seg_lines['y'].append(Segment( sympy.Line3D(this_p1, this_p2), coord='y', z=self.z ))
 
         ## keeping position resolution as 0 for now
@@ -108,23 +109,23 @@ class Plane:
         #         top and bottom below refer to this orientation
         
         if 'right' in edge:
-            return sympy.Line3D( sympy.Point3D(-0.5*self.sizes['x'],  0.5*self.sizes['y'], self.z),
-                                                  sympy.Point3D( 0.5*self.sizes['x'],  0.5*self.sizes['y'], self.z) )
+            return sympy.Line3D( sympy.Point3D(-0.5*self.sizes['x'],  0.5*self.sizes['y'], self.z, evaluate=False),
+                                                  sympy.Point3D( 0.5*self.sizes['x'],  0.5*self.sizes['y'], self.z, evaluate=False) )
         elif 'left' in edge:
-            return sympy.Line3D( sympy.Point3D(-0.5*self.sizes['x'], -0.5*self.sizes['y'], self.z),
-                                                  sympy.Point3D( 0.5*self.sizes['x'], -0.5*self.sizes['y'], self.z) )
+            return sympy.Line3D( sympy.Point3D(-0.5*self.sizes['x'], -0.5*self.sizes['y'], self.z, evaluate=False),
+                                                  sympy.Point3D( 0.5*self.sizes['x'], -0.5*self.sizes['y'], self.z, evaluate=False) )
         elif 'bottom' in edge:
-            return sympy.Line3D( sympy.Point3D(-0.5*self.sizes['x'], -0.5*self.sizes['y'], self.z),
-                                                  sympy.Point3D(-0.5*self.sizes['x'],  0.5*self.sizes['y'], self.z) )
+            return sympy.Line3D( sympy.Point3D(-0.5*self.sizes['x'], -0.5*self.sizes['y'], self.z, evaluate=False),
+                                                  sympy.Point3D(-0.5*self.sizes['x'],  0.5*self.sizes['y'], self.z, evaluate=False) )
         elif 'top' in edge:
-            return sympy.Line3D( sympy.Point3D( 0.5*self.sizes['x'], -0.5*self.sizes['y'], self.z),
-                                                  sympy.Point3D( 0.5*self.sizes['x'],  0.5*self.sizes['y'], self.z) )
+            return sympy.Line3D( sympy.Point3D( 0.5*self.sizes['x'], -0.5*self.sizes['y'], self.z, evaluate=False),
+                                                  sympy.Point3D( 0.5*self.sizes['x'],  0.5*self.sizes['y'], self.z, evaluate=False) )
         elif 'midx' in edge:
-            return sympy.Line3D( sympy.Point3D( 0, 0, self.z),
-                                                  sympy.Point3D( 1, 0, self.z) )
+            return sympy.Line3D( sympy.Point3D( 0, 0, self.z, evaluate=False),
+                                                  sympy.Point3D( 1, 0, self.z, evaluate=False) )
         elif 'midy' in edge:
-            return sympy.Line3D( sympy.Point3D( 0, 0, self.z),
-                                                  sympy.Point3D( 0, 1, self.z) )
+            return sympy.Line3D( sympy.Point3D( 0, 0, self.z, evaluate=False),
+                                                  sympy.Point3D( 0, 1, self.z, evaluate=False) )
         else:
             print('Must specify: right, left, bottom, top, midx or midy')
             return -1
@@ -136,6 +137,7 @@ class Plane:
             
         for sly in self.seg_lines['y']:
             sly.reset()
+            
             
 
     def smear(self, pos, coord):
@@ -172,7 +174,7 @@ class Plane:
         mu_ip_y = self.smear(float(intersection_point.y), 'y')
         mu_ip_z = self.smear(float(intersection_point.z), 'z')
         mu_ip_t = self.smear(muon.time, 't')
-
+        
         ## if muon is outside the detector fiducial volume
         ## or outside the time window, return 0
         if np.abs(mu_ip_x) > 0.5*self.sizes['x']:
@@ -189,9 +191,9 @@ class Plane:
         mu_rdrift = 9999.
         if self.p_type == DetType.MDT:
             for islx, slx in enumerate(self.seg_lines['x']):
-                wirepos = sympy.Point(slx.line.p1.x, slx.line.p1.z)
-                muonpos1 = sympy.Point(muon.line.p1.x, muon.line.p1.z)
-                muonpos2 = sympy.Point(muon.line.p2.x, muon.line.p2.z)
+                wirepos = sympy.Point(slx.line.p1.x, slx.line.p1.z, evaluate=False)
+                muonpos1 = sympy.Point(muon.line.p1.x, muon.line.p1.z, evaluate=False)
+                muonpos2 = sympy.Point(muon.line.p2.x, muon.line.p2.z, evaluate=False)
                 muonline = sympy.Line(muonpos1, muonpos2)
                 rdrift = muonline.distance(wirepos)
                 if rdrift.evalf() < mu_rdrift:
@@ -210,7 +212,7 @@ class Plane:
                     True)
 
         self.hits.append(muhit)
-
+        
         return 1
 
     def set_noise(self, noise_rate, noise_type='constant'):
@@ -264,25 +266,33 @@ class Plane:
     
     def find_signal(self, this_hit):
         
-        ## find which segment this hit has activated
+        ## find which detector segment this hit has activated
         
         hit_distancex_seg = None
         hit_hash_ix = -10
         hit_distancey_seg = None
         hit_hash_iy = -10
 
-        if self.p_type == DetType.MDT: # association between hit and detector element (segment) already done according to rdrfit
+        if self.p_type == DetType.MDT: # association between hit and detector element (segment) already done according to rdrift
             hit_hash_ix = this_hit.seg_ix
         else:
-            hit_hash_ix = np.argmin( [ xseg.line.distance(this_hit.point()) for xseg in self.seg_lines['x'] ] )
-        
-        hit_hash_ix = np.argmin( [ xseg.line.distance(this_hit.point()) for xseg in self.seg_lines['x'] ] )
-        hit_hash_iy = np.argmin( [ yseg.line.distance(this_hit.point()) for yseg in self.seg_lines['y'] ] )
+            # if no tilt in this plane or the hit is in the middle of detector element along y,
+            # speed up finding of nearest element
+            #hit_hash_ix = np.argmin( [ xseg.line.distance(this_hit.point()) for xseg in self.seg_lines['x'] ] )            
+            hit_hash_ix = np.argmin( [ util.distpoint2line(xseg, this_hit) for xseg in self.seg_lines['x'] ] )
+
+            
+        #hit_hash_iy = np.argmin( [ yseg.line.distance(this_hit.point()) for yseg in self.seg_lines['y'] ] )
+        hit_hash_iy = np.argmin( [ util.distpoint2line(yseg, this_hit) for yseg in self.seg_lines['y'] ] )
+
         
         ## if segment already has signal, skip (but set to muon if new signal is from muon)
             
         if self.seg_lines['x'][hit_hash_ix].is_sig == False or \
             self.seg_lines['y'][hit_hash_iy].is_sig == False:
+            
+            if self.p_type == DetType.STGC and this_hit.rdrift < -9998.:  # do not promote as signal
+                return None
             
             isig = Signal( hash_seg_line_x=hit_hash_ix, hash_seg_line_y=hit_hash_iy,
                            x=this_hit.x, y=this_hit.y, z=this_hit.z,
@@ -292,7 +302,7 @@ class Plane:
             self.seg_lines['x'][hit_hash_ix].add_signal(isig)
             self.seg_lines['y'][hit_hash_iy].add_signal(isig)
             
-            return isig.get_info_wrt_plane(self)
+            return isig.get_info_wrt_plane(self, display=False)
     
         else:
             
@@ -314,6 +324,10 @@ class Plane:
             self.hits.sort(key=lambda hit: hit.rdrift)
         else:
             self.hits.sort(key=lambda hit: hit.time)
+
+        ## apply additional position smearing by combining muon and noise hits if sTGC plane
+        if len(self.hits) > 1 and self.p_type == DetType.STGC:
+            self.combine_hits(False)
         
         out_signals = []
         
@@ -342,5 +356,41 @@ class Plane:
             
         return (sig_matrix, list(out_signals[ns].keys()) )
 
+    def combine_hits(self, summary=False):
+        
+        ## Combine hits in the same plane into one hit
+        ## For the time being, only do so if a muon hit exists
+        ## Background noise hit positions are averaged with muon hit position but with a reduced weight
+        
+        imu = -1
+        sumx = 0.
+        sumw = 0.
+        ibkg = []
+        list_seg_ix = [] # store detector segment with hits
+        for ihit, hit in enumerate(self.hits):            
+            hit_ix = np.argmin( [ util.distpoint2line(xseg, hit) for xseg in self.seg_lines['x'] ] )
+            # Here we rely on the hits being ordered to avoid multiple hits on same detector segment
+            if hit_ix in list_seg_ix:
+                continue
+            list_seg_ix.append(hit_ix)
+            if hit.is_muon:
+                imu = ihit
+                weight = 1.0
+            else:    # background noise hit
+                ibkg.append(ihit)
+                weight = 0.2
+            sumx += weight*hit.x
+            sumw += weight
+        
+        ## Update x position of muon hit (if one exists)
+        if imu >= 0:
+            self.hits[imu].x = sumx/sumw
+            ## Flag background noise hits
+            for i in ibkg:
+                self.hits[i].rdrift = -9999. # use as flag not to promote hit as signal
+
+        return None
+        
     def return_signal(self, summary=False):
         return self.hit_processor(summary)
+  
