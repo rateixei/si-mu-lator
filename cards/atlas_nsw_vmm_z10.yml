@@ -19,7 +19,7 @@ detector:
   det_n_t_seg: 25 ## window segmentation
   det_n_x_seg: 64
   det_n_y_seg: 0
-  det_t_res:  50 ## timing resolution in ns
+  det_t_res:  32 ## timing resolution in ns
 
   det_sig_eff: 0.95
 
@@ -28,7 +28,7 @@ detector:
     plane_1:
       z: 10.5
       offset: 1.6  ## staggering by half strip pitch
-      width_t: 75  ## 75 ns
+      width_t: 50  ## 50 ns
       n_t_seg: 1
       n_x_seg: 9
       x_res: 0.2   ## 200 micron spatial resolution
@@ -38,7 +38,7 @@ detector:
 
     plane_2:
       z: 15.6
-      width_t: 75
+      width_t: 50
       n_t_seg: 1
       n_x_seg: 9
       x_res: 0.2
@@ -49,7 +49,7 @@ detector:
     plane_3:
       z: 32.4
       offset: 1.6
-      width_t: 75
+      width_t: 50
       n_t_seg: 1
       n_x_seg: 9
       x_res: 0.2
@@ -59,7 +59,7 @@ detector:
 
     plane_4:
       z: 37.5
-      width_t: 75
+      width_t: 50
       n_t_seg: 1
       n_x_seg: 9
       x_res: 0.2
@@ -121,7 +121,7 @@ detector:
 
     plane_13:
       z: 344.5
-      width_t: 75
+      width_t: 50
       n_t_seg: 1
       n_x_seg: 9
       x_res: 0.2
@@ -132,7 +132,7 @@ detector:
     plane_14:
       z: 349.6
       offset: 1.6
-      width_t: 75
+      width_t: 50
       n_t_seg: 1
       n_x_seg: 9
       x_res: 0.2
@@ -142,7 +142,7 @@ detector:
 
     plane_15:
       z: 366.4
-      width_t: 75
+      width_t: 50
       n_t_seg: 1
       n_x_seg: 9
       x_res: 0.2
@@ -152,7 +152,7 @@ detector:
 
     plane_16:
       z: 371.5
-      width_t: 75
+      width_t: 50
       n_t_seg: 1
       offset: 1.6
       n_x_seg: 9

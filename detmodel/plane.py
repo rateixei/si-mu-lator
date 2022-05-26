@@ -41,6 +41,7 @@ class Plane:
         ## noise info
         self.noise_rate = 0
         self.noise_type = 'constant'
+        self.noise_hits = 0
 
         ## detector plane tilt and offset
         self.tilt = tilt
@@ -136,9 +137,7 @@ class Plane:
             slx.reset()
             
         for sly in self.seg_lines['y']:
-            sly.reset()
-            
-            
+            sly.reset()      
 
     def smear(self, pos, coord):
         ## smear muon hit position and time
@@ -209,7 +208,8 @@ class Plane:
                     mu_ip_t, 
                     mu_ix,
                     mu_rdrift,
-                    True)
+                    True,
+                    False)
 
         self.hits.append(muhit)
         
@@ -243,12 +243,15 @@ class Plane:
 
         np.random.seed(int(randseed + (self.z)))
         n_noise = np.random.poisson(n_noise_init)
+        self.noise_hits = n_noise
 
         noise_x = np.random.uniform(-0.5*self.sizes['x'], 0.5*self.sizes['x'], int(n_noise))
         noise_y = np.random.uniform(-0.5*self.sizes['y'], 0.5*self.sizes['y'], int(n_noise))
         noise_z = self.z*np.ones(int(n_noise))
         noise_t = np.random.uniform(-0.5*self.sizes['t'], 0.5*self.sizes['t'], int(n_noise))
-        noise_r = np.random.uniform(0.0, 0.5*self.sizes['x']/len(self.seg_lines['x']), int(n_noise))
+        noise_r = 9999.*np.ones(int(n_noise))
+        if self.p_type == DetType.MDT:
+            noise_r = np.random.uniform(0.0, 0.5*self.sizes['x']/len(self.seg_lines['x']), int(n_noise))
 
         for inoise in range(int(n_noise)):
             # find detector element (segment) closest to each noise hit along x, as needed for MDT
@@ -260,6 +263,7 @@ class Plane:
                             noise_t[inoise],
                             noise_ix,
                             noise_r[inoise],
+                            False,
                             False)
 
             self.hits.append(noise_hit)
@@ -291,7 +295,7 @@ class Plane:
         if self.seg_lines['x'][hit_hash_ix].is_sig == False or \
             self.seg_lines['y'][hit_hash_iy].is_sig == False:
             
-            if self.p_type == DetType.STGC and this_hit.rdrift < -9998.:  # do not promote as signal
+            if self.p_type == DetType.STGC and this_hit.skip:  # do not promote as signal
                 return None
             
             isig = Signal( hash_seg_line_x=hit_hash_ix, hash_seg_line_y=hit_hash_iy,
@@ -363,32 +367,43 @@ class Plane:
         ## Background noise hit positions are averaged with muon hit position but with a reduced weight
         
         imu = -1
+        ibkg = -1
         sumx = 0.
         sumw = 0.
-        ibkg = []
+        list_bkg_ix = []
         list_seg_ix = [] # store detector segment with hits
         for ihit, hit in enumerate(self.hits):            
             hit_ix = np.argmin( [ util.distpoint2line(xseg, hit) for xseg in self.seg_lines['x'] ] )
-            # Here we rely on the hits being ordered to avoid multiple hits on same detector segment
-            if hit_ix in list_seg_ix:
-                continue
+            ## Here we rely on the hits being ordered to avoid multiple hits on same detector segment
+            if summary:
+                print('hit_ix',hit_ix,'is muon?',hit.is_muon)
+
+            # comment out code below; removing it has the effect of not priviledging sTGC hits arriving earlier
+            #if hit_ix in list_seg_ix:
+            #    continue
             list_seg_ix.append(hit_ix)
             if hit.is_muon:
                 imu = ihit
                 weight = 1.0
             else:    # background noise hit
-                ibkg.append(ihit)
+                list_bkg_ix.append(ihit)
                 weight = 0.2
             sumx += weight*hit.x
             sumw += weight
         
-        ## Update x position of muon hit (if one exists)
+        ## Update x position of muon hit (if one exists), otherwise pick one of the noise hits if several
         if imu >= 0:
             self.hits[imu].x = sumx/sumw
-            ## Flag background noise hits
-            for i in ibkg:
-                self.hits[i].rdrift = -9999. # use as flag not to promote hit as signal
-
+        else:    # if no muon hit pick one of the noise hits randomly to become signal
+            ibkg = np.random.random_integers(0, len(list_bkg_ix)-1)
+            self.hits[ibkg].x = sumx/sumw
+        ## Flag background noise hits
+        for i in list_bkg_ix:
+            if i != list_bkg_ix[ibkg] or ibkg == -1:
+                self.hits[i].skip = True # hit will be suppressed and not considered output signal
+        if summary:
+            print('imu, ibkg, list_bkg_ix', imu, ibkg, list_bkg_ix)
+                
         return None
         
     def return_signal(self, summary=False):

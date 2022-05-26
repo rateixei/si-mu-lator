@@ -2,7 +2,7 @@ import numpy as np
 import sympy
 
 class Hit:
-    def __init__(self, x, y, z, time, seg_ix, rdrift, is_muon):
+    def __init__(self, x, y, z, time, seg_ix, rdrift, is_muon, skip):
         self.x = x
         self.y = y
         self.z = z
@@ -10,6 +10,7 @@ class Hit:
         self.seg_ix = seg_ix
         self.rdrift = rdrift
         self.is_muon = is_muon
+        self.skip = skip
     
     def point(self):
         return sympy.Point3D(self.x, self.y, self.z, evaluate=False)
@@ -23,4 +24,5 @@ class Hit:
         hit_info += f'ix = {self.seg_ix}' + '\n\t'
         hit_info += f'R = {self.rdrift}' + '\n\t'
         hit_info += f'Is from muon = {self.is_muon}' + '\n'
+        hit_info += f'Skip = {self.skip}' + '\n'
         print(hit_info)

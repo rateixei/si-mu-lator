@@ -36,7 +36,6 @@ def plot_det_volume(det, ax, draw_muon=False):
         if pz < min_z: min_z = pz
             
         for islx, slx in enumerate(p.seg_lines['x']):
-#             print(slx.line)
             
             inter_left  = list(slx.line.intersect( edges['left'] ))[0]
             inter_right = list(slx.line.intersect( edges['right'] ))[0]
@@ -63,7 +62,6 @@ def plot_det_volume(det, ax, draw_muon=False):
         
         if len(p.seg_lines['y']) > 1:
             for sly in p.seg_lines['y']:
-#                 print(sly.line)
 
                 inter_top  = list(sly.line.intersect( edges['top'] ))[0]
                 inter_bottom = list(sly.line.intersect( edges['bottom'] ))[0]
@@ -187,12 +185,17 @@ def plot_det_xz(det, ax, draw_muon=False, draw_allhits=False):
                 rdrift = hit.rdrift
                 hitpos = sympy.Point(p.seg_lines['x'][hit.seg_ix].line.p1.x, hit.z, evaluate=False)
             elif p.p_type == DetType.STGC:
-                if hit.is_muon:
+                hit_ix = np.argmin( [ util.distpoint2line(xseg, hit) for xseg in p.seg_lines['x'] ] )
+                if draw_allhits or (p.seg_lines['x'][hit_ix].is_sig and hit.rdrift > 9998.):
                     hitpos = sympy.Point(hit.x, hit.z, evaluate=False)
-                else: # place noise hit in middle of strip
-                    #hit_ix = np.argmin( [ abs(xseg-hit.x) for xseg in p.seg_mids['x'] ] )
-                    hit_ix = np.argmin( [ util.distpoint2line(xseg, hit) for xseg in p.seg_lines['x'] ] )
-                    hitpos = sympy.Point(p.seg_lines['x'][hit_ix].line.p1.x, hit.z, evaluate=False)
+                else:
+                    continue
+                #if hit.is_muon:
+                #    hitpos = sympy.Point(hit.x, hit.z, evaluate=False)
+                #else: # place noise hit in middle of strip
+                #    #hit_ix = np.argmin( [ abs(xseg-hit.x) for xseg in p.seg_mids['x'] ] )
+                #    hit_ix = np.argmin( [ util.distpoint2line(xseg, hit) for xseg in p.seg_lines['x'] ] )
+                #    hitpos = sympy.Point(p.seg_lines['x'][hit_ix].line.p1.x, hit.z, evaluate=False)
             
             cir = plt.Circle(hitpos, rdrift, color=lcolor, linewidth=2, fill=False)
             ax.add_patch(cir)
