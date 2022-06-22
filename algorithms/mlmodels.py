@@ -244,12 +244,12 @@ def model_recurrent_muon(input_shape,
     
     """
 
-    if len(reclayers) < 1:
+    if len(rec_layers) < 1:
         print("Invalid rec_layers", rec_layers)
         return -1
 
-    if 'lstm' not in rho_layer and 'gru' not in rho_layer:
-        print('rec_layer must be either gru or lstm, it is',rho_layer)
+    if 'lstm' not in rec_layer and 'gru' not in rec_layer:
+        print('rec_layer must be either gru or lstm, it is',rec_layer)
         return -1
     
     if len(F_layers) < 1:
@@ -264,17 +264,17 @@ def model_recurrent_muon(input_shape,
     
     if 'gru' in rec_layer:
         for irec,rec_l in enumerate(rec_layers):
-            hidden = GRU(rec_l, name='gru_{irec}')(hidden)
+            hidden = GRU(rec_l, name=f'gru_{irec}')(hidden)
     if 'lstm' in rec_layer:
         for irec,rec_l in enumerate(rec_layers):
-            hidden = LSTM(rec_l, name='lstm_{irec}')(hidden)
+            hidden = LSTM(rec_l, name=f'lstm_{irec}')(hidden)
     
     for iF,F_l in enumerate(F_layers):
-        hidden = Dense(F_l, activation='relu', name='F_dense_{iF}')(hidden)
+        hidden = Dense(F_l, activation='relu', name=f'F_dense_{iF}')(hidden)
 
     out = Dense(1, activation='sigmoid', name='output')(hidden)
     
-    model = Model(inputs=inputs, outputs=F)
+    model = Model(inputs=inputs, outputs=out)
     model.summary()
 
     if do_reg_out==0:
