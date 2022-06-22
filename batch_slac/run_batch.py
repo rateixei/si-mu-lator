@@ -18,7 +18,7 @@ bkg_rate        = 1
 override_total_n_noise = -1 ## only accepted if not generating muon
 
 ## muon
-generate_muon   = True
+generate_muon   = False
 # muon_x_range    = [-100, -90]
 # muon_a_range    = [3.141/2, 3.142/2]
 muon_a_range    = []
