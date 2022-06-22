@@ -46,13 +46,18 @@ for tv in training_vars:
     vars_of_interest[sig_keys.index(tv)] = 1
 X = dmat[:,:,vars_of_interest]
 
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y[:,0], test_size=0.33)
+target = Y_mu
 
 my_model = 0
 n_reg = 0
+mod_name = args.mod_type
+
 if args.task_type == 'regression':
     n_reg = 1
-mod_name = args.mod_type
+    target = data["ev_mu_x"]
+    mod_name = 'regress_'+args.mod_type
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, target, test_size=0.33)
 
 if 'none' not in args.label:
     mod_name += '_' + args.label
