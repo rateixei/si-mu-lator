@@ -17,7 +17,7 @@ parser.add_argument('-f', '--files', dest='files', type=str, required=True,
 parser.add_argument('-m', '--model', dest='mod_type', required=True,
                     choices=['deepsets', 'attn_deepsets', 'lstm', 'gru'],
                     help='Type of network')
-parser.add_argument('-t', '--task', dest='task_type', required=True,
+parser.add_argument('-t', '--task', dest='task_type', default='classification',
                     choices=['classification', 'regression'],
                     help='Type of training task')
 parser.add_argument('-l', '--label', dest='label', default='none')
@@ -57,7 +57,7 @@ mod_name = args.mod_type
 if 'none' not in args.label:
     mod_name += '_' + args.label
 
-now = datetime.now()
+now = datetime.datetime.now()
 date_time = now.strftime("_%d%m%Y_%H.%M.%S")
 mod_name += date_time
 
@@ -78,7 +78,7 @@ elif args.mod_type == 'attn_deepsets':
         do_reg_out=n_reg)
 elif args.mod_type == 'lstm' or args.mod_type == 'gru':
     my_model = mlmodels.model_recurrent_muon(input_shape=(X.shape[1],X.shape[2]),
-        rec_layer=args.mod_type
+        rec_layer=args.mod_type,
         rec_layers=[20], 
         F_layers=[20,10], 
         batchnorm=True, mask_v=0, 

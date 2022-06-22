@@ -101,7 +101,7 @@ def model_deep_set_muon(input_shape,
     
     inputs = Input(shape=(input_shape[0], input_shape[1],), name="inputs")
     
-    masked = Masking( mask_value=mask_v, name="masking_1")(inputs)
+    phi = Masking( mask_value=mask_v, name="masking_1")(inputs)
     
     if batchnorm: 
         phi = BatchNormalization()(phi)
@@ -224,7 +224,7 @@ def model_deep_set_muonhit(input_shape, ll = 0.1,
     return model
 
 def model_recurrent_muon(input_shape,
-        rec_layer='lstm'
+        rec_layer='lstm',
         rec_layers=[20], 
         F_layers=[20,10], 
         batchnorm=True, mask_v=0, 
