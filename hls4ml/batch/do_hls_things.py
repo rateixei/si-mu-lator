@@ -41,7 +41,7 @@ parser.add_argument('--strategy', dest='strat', default='Latency',
                     help='Strategy')
 parser.add_argument('--vivado', dest='viv', action='store_true', default=False,
                     help='Do vivado things')
-parser.add_argument('--lut', dest='new_table', action='store_true', default=False, 
+parser.add_argument('--lut', dest='new_table', action='store_true', default=True, 
                     help='Change LUT precision')
 parser.add_argument('--static', dest='static', type=int, default=1, 
                     help='From static to non-static')
@@ -140,12 +140,8 @@ if args.static < 1:
 else:
     hls_model_name += '_Static'
 
-hls_model_name += '_NewImage'
-
 if args.new_table:
-    hls_model_name += '_NewBigTable'
-
-hls_model_name += '_NewPart'
+    hls_model_name += '_BigTable'
 
 proj_loc = out_loc_name + f'/{hls_model_name}/myproject_prj/'
 hls_model = hls4ml.converters.convert_from_keras_model(model, part='xcu250-figd2104-2-e',
