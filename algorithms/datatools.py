@@ -64,4 +64,14 @@ def make_data_matrix(all_files, max_files=50, masking99 = False, sort_by='none')
     Y[:,0] = Y_mu[:]
     Y[:,1:] = Y_hit[:]
     
+    ## calculate n_x, n_u and n_v for MMs
+    data['n_sig_mmx'] = np.zeros(tot_evts)
+    data['n_sig_mmu'] = np.zeros(tot_evts)
+    data['n_sig_mmv'] = np.zeros(tot_evts)
+    for iev in range(dmat.shape[0]):
+        hits_tilt = dmat[iev,:,sig_keys.index('ptilt')]
+        data['n_sig_mmu'][iev] = (hits_tilt > 0).sum()
+        data['n_sig_mmv'][iev] = ((hits_tilt < 0)&(hits_tilt > -90)).sum()
+        data['n_sig_mmx'][iev] = data['ev_n_signals'][iev] - data['n_sig_mmu'][iev] - data['n_sig_mmv'][iev]
+    
     return (data, dmat, Y, Y_mu, Y_hit, sig_keys)
