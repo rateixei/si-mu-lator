@@ -22,7 +22,7 @@ generate_muon   = False
 # muon_x_range    = [-100, -90]
 # muon_a_range    = [3.141/2, 3.142/2]
 muon_a_range    = []
-muon_x_range    = [-2.0,2.0]
+muon_x_range    = [-14.0,14.0]
 # muon_a_range    = []
 
 out_loc         = here_batch+f"/out_files/{detcard_name}_bkgr_{bkg_rate}"

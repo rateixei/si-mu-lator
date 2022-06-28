@@ -7,7 +7,7 @@ import datetime
 import datatools
 import mlmodels
 
-from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 parser = argparse.ArgumentParser(description='Train neural network')
@@ -57,7 +57,7 @@ if args.task_type == 'regression':
     target = data["ev_mu_x"]
     mod_name = 'regress_'+args.mod_type
 
-X_train, X_test, Y_train, Y_test = train_test_split(X, target, test_size=0.33)
+X_train, Y_train = shuffle(X, target)
 
 if 'none' not in args.label:
     mod_name += '_' + args.label
@@ -93,16 +93,19 @@ else:
     sys.exit()
 
 my_model.save(f'models/{mod_name}')
+model_json = my_model.to_json()
+with open(f'models/{mod_name}/arch.json', 'w') as json_file:
+    json_file.write(model_json)
 
 history = my_model.fit( X_train, Y_train,
                         callbacks = [
                                 EarlyStopping(monitor='val_loss', patience=100, verbose=1),
-                                ModelCheckpoint(f'models/{mod_name}_weight.h5', monitor='val_loss', verbose=True, save_best_only=True) ],
+                                ModelCheckpoint(f'models/{mod_name}/weights.h5', monitor='val_loss', verbose=True, save_best_only=True) ],
                         epochs=3000,
-                        validation_split = 0.1,
+                        validation_split = 0.2,
                         batch_size=2**14,
                         verbose=1
                        )
     
-my_model.load_weights(f'models/{mod_name}_weight.h5')
+my_model.load_weights(f'models/{mod_name}/weights.h5')
 my_model.save(f'models/{mod_name}')

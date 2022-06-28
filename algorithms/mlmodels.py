@@ -134,10 +134,10 @@ def model_deep_set_muon(input_shape,
 
     if do_reg_out==0:
         my_loss = tf.keras.losses.BinaryCrossentropy()
-        model.compile(loss=my_loss, optimizer='adam', metrics=[my_loss])
+        model.compile(loss=my_loss, optimizer='adam', metrics=['accuracy'])
     else:
         my_loss = tf.keras.losses.MeanSquaredError(reduction="auto", name="mean_squared_error")
-        model.compile(loss=my_loss, optimizer='adam', metrics=[my_loss])
+        model.compile(loss=my_loss, optimizer='adam', metrics=['mse'])
 
     return model
 
@@ -219,7 +219,7 @@ def model_deep_set_muonhit(input_shape, ll = 0.1,
     model.summary()
     
     my_loss = comp_loss(ll, input_shape[0]+1)
-    model.compile(loss=my_loss, optimizer='adam', metrics=[my_loss])
+    model.compile(loss=my_loss, optimizer='adam')
     
     return model
 
@@ -279,10 +279,10 @@ def model_recurrent_muon(input_shape,
 
     if do_reg_out==0:
         my_loss = tf.keras.losses.BinaryCrossentropy()
-        model.compile(loss=my_loss, optimizer='adam', metrics=[my_loss])
+        model.compile(loss=my_loss, optimizer='adam', metrics=['accuracy'])
     else:
         my_loss = tf.keras.losses.MeanSquaredError(reduction="auto", name="mean_squared_error")
-        model.compile(loss=my_loss, optimizer='adam', metrics=[my_loss])
+        model.compile(loss=my_loss, optimizer='adam', metrics=['mse'])
 
     return model
     
