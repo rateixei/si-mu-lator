@@ -46,11 +46,13 @@ print('Y_hit shape:', Y_hit.shape)
 print('N signal:', (Y_mu == 1).sum())
 print('N background:', (Y_mu == 0).sum())
 
-vars_of_interest = np.zeros(dmat.shape[2], dtype=bool)
+X_prep = datatools.training_prep(dmat, sig_keys)
+
+vars_of_interest = np.zeros(X_prep.shape[2], dtype=bool)
 training_vars = trainingvariables.tvars
 for tv in training_vars:
     vars_of_interest[sig_keys.index(tv)] = 1
-X = dmat[:,:,vars_of_interest]
+X = X_prep[:,:,vars_of_interest]
 
 target = Y_mu
 
