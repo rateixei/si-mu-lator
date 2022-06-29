@@ -75,7 +75,8 @@ def model_deep_set_muon(input_shape,
         F_layers=[20,10], 
         batchnorm=True, mask_v=0, 
         add_selfattention=False,
-        do_reg_out=0):
+        do_reg_out=0,
+        masking=True):
     """
     Implementation of deep sets model with muon outputs only.
     phi_layers correspond to the architecture of the hit-level 
@@ -101,13 +102,25 @@ def model_deep_set_muon(input_shape,
     
     inputs = Input(shape=(input_shape[0], input_shape[1],), name="inputs")
     
-    phi = Masking( mask_value=mask_v, name="masking_1")(inputs)
+    is_ready = False
+    
+    if masking:
+        phi = Masking( mask_value=mask_v, name="masking_1")(inputs)
+        is_ready=True
     
     if batchnorm: 
-        phi = BatchNormalization()(phi)
+        if is_ready: 
+            phi = BatchNormalization()(phi)
+        else: 
+            phi = BatchNormalization()(inputs)
+            is_ready=True
     
     for iphi,phi_l in enumerate(phi_layers):
-        phi = TimeDistributed( Dense(phi_l,activation='relu'),name=f"Phi_{iphi}_Dense")(phi)
+        if is_ready: 
+            phi = TimeDistributed( Dense(phi_l,activation='relu'),name=f"Phi_{iphi}_Dense")(phi)
+        else:
+            phi = TimeDistributed( Dense(phi_l,activation='relu'),name=f"Phi_{iphi}_Dense")(inputs)
+            is_ready=True
     
     if batchnorm: 
         phi = BatchNormalization()(phi)
@@ -227,8 +240,10 @@ def model_recurrent_muon(input_shape,
         rec_layer='lstm',
         rec_layers=[20], 
         F_layers=[20,10], 
-        batchnorm=True, mask_v=0, 
-        do_reg_out=0):
+        batchnorm=True, 
+        mask_v=-99, 
+        do_reg_out=0,
+        masking=True):
     """
     Implementation of recurrent model with muon outputs only.
     rec_layer accepts 'lstm' or 'gru'.
@@ -258,16 +273,33 @@ def model_recurrent_muon(input_shape,
     
     inputs = Input(shape=(input_shape[0], input_shape[1],), name="inputs")
     
-    masked = Masking( mask_value=-99, name="masking_1")(inputs)
+    is_ready = False
     
-    hidden = BatchNormalization()(masked)
+    if masking:
+        hidden = Masking( mask_value=mask_v, name="masking_1")(inputs)
+        is_ready=True
+    
+    if batchnorm: 
+        if is_ready: 
+            hidden = BatchNormalization()(hidden)
+        else: 
+            hidden = BatchNormalization()(inputs)
+            is_ready=True
     
     if 'gru' in rec_layer:
         for irec,rec_l in enumerate(rec_layers):
-            hidden = GRU(rec_l, name=f'gru_{irec}')(hidden)
+            if is_ready:
+                hidden = GRU(rec_l, name=f'gru_{irec}')(hidden)
+            else:
+                hidden = GRU(rec_l, name=f'gru_{irec}')(inputs)
+                is_ready=True
     if 'lstm' in rec_layer:
         for irec,rec_l in enumerate(rec_layers):
-            hidden = LSTM(rec_l, name=f'lstm_{irec}')(hidden)
+            if is_ready:
+                hidden = LSTM(rec_l, name=f'lstm_{irec}')(hidden)
+            else:
+                hidden = LSTM(rec_l, name=f'lstm_{irec}')(inputs)
+                is_ready=True
     
     for iF,F_l in enumerate(F_layers):
         hidden = Dense(F_l, activation='relu', name=f'F_dense_{iF}')(hidden)

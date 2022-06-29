@@ -1,0 +1,1 @@
+tvars = [ 'z', 'ptilt', 'time', 'projX_at_rightend_x', 'projX_at_middle_x', 'is_signal' ]

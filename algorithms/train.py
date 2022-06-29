@@ -10,6 +10,8 @@ import mlmodels
 from sklearn.utils import shuffle
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
+import trainingvariables
+
 parser = argparse.ArgumentParser(description='Train neural network')
 
 parser.add_argument('-f', '--files', dest='files', type=str, required=True,
@@ -21,6 +23,10 @@ parser.add_argument('-t', '--task', dest='task_type', default='classification',
                     choices=['classification', 'regression'],
                     help='Type of training task')
 parser.add_argument('-l', '--label', dest='label', default='none')
+parser.add_argument('--batchnorm', dest='bnorm', default=False, action='store_true',
+                    help='use batch norm layer')
+parser.add_argument('--masking', dest='masking', default=False, action='store_true',
+                    help='use masking layer')
 
 args = parser.parse_args()
 
@@ -40,11 +46,13 @@ print('Y_hit shape:', Y_hit.shape)
 print('N signal:', (Y_mu == 1).sum())
 print('N background:', (Y_mu == 0).sum())
 
-vars_of_interest = np.zeros(dmat.shape[2], dtype=bool)
-training_vars = [ 'z', 'ptilt', 'time', 'projX_at_rightend_x', 'projX_at_middle_x' ]
+X_prep = datatools.training_prep(dmat, sig_keys)
+
+vars_of_interest = np.zeros(X_prep.shape[2], dtype=bool)
+training_vars = trainingvariables.tvars
 for tv in training_vars:
     vars_of_interest[sig_keys.index(tv)] = 1
-X = dmat[:,:,vars_of_interest]
+X = X_prep[:,:,vars_of_interest]
 
 target = Y_mu
 
@@ -62,32 +70,37 @@ X_train, Y_train = shuffle(X, target)
 if 'none' not in args.label:
     mod_name += '_' + args.label
 
+mod_name += f'_BatchNorm{args.bnorm}'
+mod_name += f'_Masking{args.masking}'
+    
 now = datetime.datetime.now()
 date_time = now.strftime("_%d%m%Y_%H.%M.%S")
 mod_name += date_time
-
 
 if args.mod_type == 'deepsets':
     my_model = mlmodels.model_deep_set_muon(input_shape=(X.shape[1],X.shape[2]), 
         phi_layers=[50,50,50], 
         F_layers=[20,10], 
-        batchnorm=True, mask_v=-99, 
+        batchnorm=args.bnorm, mask_v=-99, 
         add_selfattention=False,
-        do_reg_out=n_reg)
+        do_reg_out=n_reg,
+        masking=args.masking)
 elif args.mod_type == 'attn_deepsets':
     my_model = mlmodels.model_deep_set_muon(input_shape=(X.shape[1],X.shape[2]), 
         phi_layers=[50,50,50], 
         F_layers=[20,10], 
-        batchnorm=True, mask_v=-99, 
+        batchnorm=args.bnorm, mask_v=-99, 
         add_selfattention=True,
-        do_reg_out=n_reg)
+        do_reg_out=n_reg,
+        masking=args.masking)
 elif args.mod_type == 'lstm' or args.mod_type == 'gru':
     my_model = mlmodels.model_recurrent_muon(input_shape=(X.shape[1],X.shape[2]),
         rec_layer=args.mod_type,
         rec_layers=[20], 
         F_layers=[20,10], 
-        batchnorm=True, mask_v=0, 
-        do_reg_out=0)
+        batchnorm=args.bnorm, mask_v=-99, 
+        do_reg_out=0,
+        masking=args.masking)
 else:
     print("!!!")
     sys.exit()
