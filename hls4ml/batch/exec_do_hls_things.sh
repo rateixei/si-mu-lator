@@ -10,7 +10,10 @@ r_factor=( 1 5 10 50 100 )
 # r_factor=( 1 )
 
 MOD_LOC=/gpfs/slac/atlas/fs1/u/rafaeltl/Muon/21062022/si-mu-lator/algorithms/models/
-MOD=gru_BatchNormTrue_MaskingFalse_28062022_06.21.52
+# MOD=gru_BatchNormTrue_MaskingFalse_28062022_06.21.52
+# MOD=lstm_BatchNormTrue_MaskingFalse_28062022_10.27.00
+# MOD=lstm_BatchNormFalse_MaskingFalse_29062022_00.09.58
+MOD=gru_BatchNormFalse_MaskingFalse_29062022_01.20.50
 
 DATALOC=/gpfs/slac/atlas/fs1/u/rafaeltl/Muon/21062022/si-mu-lator/hls4ml/
 DATA="${DATALOC}/X_test_10000.npy,${DATALOC}/Y_test_10000.npy"
