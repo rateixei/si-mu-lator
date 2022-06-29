@@ -75,3 +75,33 @@ def make_data_matrix(all_files, max_files=50, masking99 = False, sort_by='none')
         data['n_sig_mmx'][iev] = data['ev_n_signals'][iev] - data['n_sig_mmu'][iev] - data['n_sig_mmv'][iev]
     
     return (data, dmat, Y, Y_mu, Y_hit, sig_keys)
+
+def training_prep(X, sig_keys):
+    
+    X_out = np.zeros((X.shape[0], X.shape[1], X.shape[2]+1))
+    
+    if 'is_signal' not in sig_keys:
+        sig_keys.append('is_signal')
+    else:
+        print('Data already prepared?')
+        # return X
+    
+    for iev,ev in enumerate(X):
+        hit_types = ev[:,sig_keys.index('is_muon')]
+        valid_hits = hit_types > -90
+        
+        if valid_hits.sum() < 1: continue
+        
+        X_out[iev,valid_hits,:-1] = np.copy(ev[valid_hits,:])
+        X_out[iev,valid_hits, -1] = np.ones_like(X_out[iev,valid_hits, -1])
+        
+        delta_z_valid_hits = X_out[iev,valid_hits,sig_keys.index('z')].max() - X_out[iev,valid_hits,sig_keys.index('z')].min()
+        
+        if delta_z_valid_hits < 1e-5:
+            delta_z_valid_hits = X_out[iev,valid_hits,sig_keys.index('z')].max()
+            
+        X_out[iev,valid_hits,sig_keys.index('z')] = ( X_out[iev,valid_hits,sig_keys.index('z')] - delta_z_valid_hits)/delta_z_valid_hits
+        
+        X_out[iev,valid_hits,sig_keys.index('ptilt')] = X_out[iev,valid_hits,sig_keys.index('ptilt')]/0.02618
+    
+    return X_out
