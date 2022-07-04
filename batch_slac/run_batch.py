@@ -9,11 +9,11 @@ iseed=datetime.now().microsecond
 here_batch      = os.getcwd() + '/'
 here            = here_batch.replace('/batch_slac', '')
 #detcard_name    = "atlas_mm_road"
-detcard_name    = "atlas_mm_vmm"
+detcard_name    = "atlas_nsw_vmm"
 det_card        = here+"/cards/"+detcard_name+".yml"
 
 ## events and noise
-nevs            = 1000
+nevs            = 2500
 bkg_rate        = 1
 override_total_n_noise = -1 ## only accepted if not generating muon
 

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import h5py
+from tqdm import tqdm
 
 def make_data_matrix(all_files, max_files=50, masking99 = False, sort_by='none'):
     
@@ -9,15 +10,14 @@ def make_data_matrix(all_files, max_files=50, masking99 = False, sort_by='none')
     signals = []
     sig_keys = []
 
-    for ifile in range(min(max_files, len(all_files))):
+    for ifile in tqdm(range(min(max_files, len(all_files)))):
         fname = all_files[ifile]
-        print(fname)
     
         this_file = h5py.File( fname, 'r' )
         
         if ifile == 0:
             sig_keys = [ vv.decode("utf-8") for vv in np.array(this_file['signal_keys']) ]
-            print(sig_keys)
+            
     
         signals.append( np.array( this_file['signals'] ) )
         
@@ -27,18 +27,24 @@ def make_data_matrix(all_files, max_files=50, masking99 = False, sort_by='none')
                     data[kk] = np.array( this_file[kk] )
                 else:
                     data[kk] = np.concatenate( [data[kk], np.array( this_file[kk] )] )
-    
+
+    print(sig_keys)
+    print(data.keys())
     max_hits = max( [ als.shape[1] for als in signals ] )
+    print(max_hits, max(data['ev_n_signals']) )
+    
     features = max( [ als.shape[2] for als in signals ] )
     tot_evts = np.sum( [als.shape[0] for als in signals] )
     
     dmat = -99*np.ones((tot_evts, max_hits, features))
+    print(dmat.shape)
     Y_mu = np.array(data['ev_mu_phi'] >= 0, dtype=int)
     
     tot_add = 0
     for fevt in signals:
         n_entries = fevt.shape[0]
-        dmat[tot_add:tot_add+n_entries,:,:] = fevt[:]
+        n_hits = fevt.shape[1]
+        dmat[tot_add:tot_add+n_entries,:n_hits,:] = fevt[:]
         tot_add += n_entries
         # for evt in fevt:
             # hits_to_add = evt#[np.where(evt[:,sig_keys.index('is_muon')] > -990)][:]
@@ -65,14 +71,21 @@ def make_data_matrix(all_files, max_files=50, masking99 = False, sort_by='none')
     Y[:,1:] = Y_hit[:]
     
     ## calculate n_x, n_u and n_v for MMs
-    data['n_sig_mmx'] = np.zeros(tot_evts)
-    data['n_sig_mmu'] = np.zeros(tot_evts)
-    data['n_sig_mmv'] = np.zeros(tot_evts)
+    data['n_sig_mmx']  = np.zeros(tot_evts)
+    data['n_sig_mmu']  = np.zeros(tot_evts)
+    data['n_sig_mmv']  = np.zeros(tot_evts)
+    data['n_sig_mm']   = np.zeros(tot_evts)
+    data['n_sig_stgc'] = np.zeros(tot_evts)
+    data['n_sig_mdt']  = np.zeros(tot_evts)
     for iev in range(dmat.shape[0]):
         hits_tilt = dmat[iev,:,sig_keys.index('ptilt')]
-        data['n_sig_mmu'][iev] = (hits_tilt > 0).sum()
-        data['n_sig_mmv'][iev] = ((hits_tilt < 0)&(hits_tilt > -90)).sum()
-        data['n_sig_mmx'][iev] = data['ev_n_signals'][iev] - data['n_sig_mmu'][iev] - data['n_sig_mmv'][iev]
+        is_mm = dmat[iev,:,sig_keys.index('ptype')] == 0
+        data['n_sig_mmu'][iev]  = ((hits_tilt > 0)&(is_mm)).sum()
+        data['n_sig_mmv'][iev]  = ((hits_tilt < 0)&(hits_tilt > -90)&(is_mm)).sum()
+        data['n_sig_mmx'][iev]  = (is_mm).sum() - data['n_sig_mmu'][iev] - data['n_sig_mmv'][iev]
+        data['n_sig_mm'][iev]   = (dmat[iev,:,sig_keys.index('ptype')] == 0).sum()
+        data['n_sig_stgc'][iev] = (dmat[iev,:,sig_keys.index('ptype')] == 2).sum()
+        data['n_sig_mdt'][iev]  = (dmat[iev,:,sig_keys.index('ptype')] == 1).sum()
     
     return (data, dmat, Y, Y_mu, Y_hit, sig_keys)
 
