@@ -3,8 +3,9 @@ from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Layer, Masking, Input, Dense, concatenate
 from tensorflow.keras.layers import ReLU, BatchNormalization, Attention
 from tensorflow.keras.layers import BatchNormalization, Embedding, Lambda, TimeDistributed
-from tensorflow.keras.layers import LSTM, GRU
+from tensorflow.keras.layers import LSTM, GRU, Conv1D, GlobalMaxPooling1D, Flatten
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.optimizers import Adam
 
 import tensorflow as tf
 
@@ -66,6 +67,41 @@ def muon_and_hit_loss(ll, n_outs):
                 
             total_loss = total_loss + hit_loss*llvar
         
+        return total_loss
+
+    return model_loss
+
+def class_and_regr_loss(ll):
+    """
+    Custom loss that adds an event-based binary classifier loss (muon vs no muon)
+    and many hit-based binary classifier losses (muon hit vs noise hit).
+    The two components are importance weighted by input ll.
+
+    """
+    
+    llvar = tf.constant(ll, dtype=tf.float32)
+    half = tf.constant(0.5, dtype=tf.float32)
+    max_val = tf.constant(1, dtype=tf.float32)
+    min_val = tf.constant(-1, dtype=tf.float32)
+    pow_val = tf.constant(2, dtype=tf.float32)
+    clasloss = tf.keras.losses.BinaryCrossentropy(reduction='sum_over_batch_size')
+    regrloss = tf.keras.losses.MeanSquaredError(reduction='sum_over_batch_size')
+
+    def model_loss(y_true, y_pred):
+        clasloss_val = clasloss(y_true[:,0], y_pred[:,0])
+        regrloss_val = regrloss(y_true[:,1], y_pred[:,1])
+        
+        regr_penalty_1 = tf.math.pow(y_pred[:,1] - max_val, pow_val)*tf.cast( tf.math.greater(y_pred[:,1], max_val), dtype=tf.float32 )
+        
+        regr_penalty_2 = tf.math.pow(y_pred[:,1] - min_val, pow_val)*tf.cast( tf.math.less(y_pred[:,1], min_val), dtype=tf.float32 )
+        
+#         regr_penalty_1 = tf.math.pow(tf.math.abs(y_pred[:,1])-max_val, pow_val)*tf.cast( tf.math.greater(y_pred[:,1], max_val), dtype=tf.float32 )
+        
+#         regr_penalty_2 = tf.math.pow(tf.math.abs(y_pred[:,1])-min_val, pow_val)*tf.cast( tf.math.less(y_pred[:,1], min_val), dtype=tf.float32 )
+        
+        
+        # regrloss_val = regrloss(y_true[:,1], tf.clip_by_value(y_pred[:,1], -1, 1) )
+        total_loss =  clasloss_val + llvar*(tf.cast(y_true[:,0], dtype=tf.float32)*regrloss_val + regr_penalty_1 + regr_penalty_2)
         return total_loss
 
     return model_loss
@@ -304,7 +340,10 @@ def model_recurrent_muon(input_shape,
     for iF,F_l in enumerate(F_layers):
         hidden = Dense(F_l, activation='relu', name=f'F_dense_{iF}')(hidden)
 
-    out = Dense(1, activation='sigmoid', name='output')(hidden)
+    if do_reg_out==0:
+        out = Dense(1, activation='sigmoid', name='output')(hidden)
+    else:
+        out = Dense(do_reg_out, activation='linear', name='output')(hidden)
     
     model = Model(inputs=inputs, outputs=out)
     model.summary()
@@ -318,3 +357,102 @@ def model_recurrent_muon(input_shape,
 
     return model
     
+
+def model_mlp_muon(input_shape,
+        dense_layers=[100,50,10], 
+        batchnorm=True, 
+        do_reg_out=0):
+    """
+    Implementation of MLP model with muon outputs only.
+    dense_layers correspond to the architecture of the ReLU MLP.
+    If do_reg_out==0, the network is trained as a binary classifier.
+    If do_reg_out>0, the network is trained as a regressor with 
+    do_reg_out outputs.
+    
+    """
+
+    if len(dense_layers) < 1:
+        print("Invalid dense_layers", dense_layers)
+        return -1
+    
+    inputs = Input(shape=(input_shape, ), name="inputs")
+    
+    if batchnorm: 
+        hidden = BatchNormalization()(inputs)
+    
+    for iD,D_l in enumerate(dense_layers):
+        if batchnorm==False and iD==0:
+            hidden = Dense(D_l, activation='relu', name=f'F_dense_{iD}')(inputs)    
+        else:
+            hidden = Dense(D_l, activation='relu', name=f'F_dense_{iD}')(hidden)
+
+    if do_reg_out==0:
+        out = Dense(1, activation='sigmoid', name='output')(hidden)
+    else:
+        out = Dense(do_reg_out, activation='linear', name='output')(hidden)
+    
+    model = Model(inputs=inputs, outputs=out)
+    model.summary()
+
+    if do_reg_out==0:
+        my_loss = tf.keras.losses.BinaryCrossentropy()
+        model.compile(loss=my_loss, optimizer='adam', metrics=['accuracy'])
+    else:
+        my_loss = tf.keras.losses.MeanSquaredError(reduction="auto", name="mean_squared_error")
+        model.compile(loss=my_loss, optimizer='adam', metrics=['mse'])
+
+    return model
+    
+
+def model_tcn_muon(input_shape,
+        convs_1ds=[ (64,3), (64,3) ],
+        F_layers=[20,10], 
+        batchnorm=True, 
+        do_reg_out=0,
+        l1_reg=0, l2_reg=0,
+        ll=0):
+
+    inputs = Input(shape=(input_shape[0], input_shape[1],), name="inputs")
+
+    for ic1d,c1d in enumerate(convs_1ds):
+        if ic1d == 0:
+            conv = Conv1D(filters=c1d[0], kernel_size=c1d[1], strides=1, 
+                          activation='relu', kernel_initializer='variance_scaling', kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
+                          input_shape=input_shape, name=f"C1D_{ic1d}" )(inputs)
+        else:
+            conv = Conv1D(filters=c1d[0], kernel_size=c1d[1], strides=1, 
+                          activation='relu', kernel_initializer='variance_scaling', kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
+                          name=f"C1D_{ic1d}" )(conv)
+
+    hidden = GlobalMaxPooling1D()(conv)
+    # hidden = Flatten()(conv)
+
+    for iF,F_l in enumerate(F_layers):
+        hidden = Dense(F_l, activation='relu', kernel_initializer='variance_scaling', name=f'F_dense_{iF}')(hidden)
+
+    if do_reg_out==False:
+        out = Dense(1, activation='sigmoid', name='output')(hidden)
+    else:
+        # hidden_clas = Dense(5, activation='relu', name='hidden_clas')(hidden)
+        out_clas = Dense(1, activation='sigmoid', name='output_clas')(hidden)
+
+        # hidden_regr = Dense(5, activation='relu', name='hidden_regr0')(hidden)
+        # hidden_regr = Dense(3, activation='relu', name='hidden_regr1')(hidden_regr)
+        # hidden_regr = Dense(2, activation='relu', name='hidden_regr2')(hidden_regr)
+        out_regr = Dense(1, activation='linear', name='output_regr')(hidden)
+
+        out = concatenate([out_clas, out_regr], name="combined_output")
+
+    model = Model(inputs=inputs, outputs=out)
+    model.summary()
+
+    if do_reg_out==False:
+        my_loss = tf.keras.losses.BinaryCrossentropy(reduction='sum_over_batch_size')
+        opt = Adam(learning_rate=0.01)
+        model.compile(loss=my_loss, optimizer=opt, metrics=['accuracy'])
+    else:
+        opt = Adam(learning_rate=0.01)
+        combined_loss = class_and_regr_loss(ll)
+        model.compile(loss=combined_loss, optimizer=opt)
+
+    return model

@@ -31,8 +31,14 @@ parser.add_argument('-w', '--nn-weights', dest='nn_weights', type=str, required=
 parser.add_argument('-o', '--output-dir', dest='out_dir', type=str, default='./',
                     help='Output location')
 
-parser.add_argument('-p', '--precision', dest='prec', type=str, default='16,6',
-                    help='HLS precision')
+#parser.add_argument('-p', '--precision', dest='prec', type=str, default='16,6',
+#                    help='HLS precision')
+
+parser.add_argument('--fwidth', dest='fwidth', type=int, default=10,
+                    help='HLS fractional bith width')
+
+parser.add_argument('--iwidth', dest='iwidth', type=int, default=6,
+                    help='HLS integer bith width')
 
 parser.add_argument('-r', '--reuse', dest='reuse', type=int, default=1,
                     help='HLS precision')
@@ -41,7 +47,7 @@ parser.add_argument('--strategy', dest='strat', default='Latency',
                     help='Strategy')
 parser.add_argument('--vivado', dest='viv', action='store_true', default=False,
                     help='Do vivado things')
-parser.add_argument('--lut', dest='new_table', action='store_true', default=True, 
+parser.add_argument('--lut', dest='new_table', action='store_true', default=False, 
                     help='Change LUT precision')
 parser.add_argument('--static', dest='static', type=int, default=1, 
                     help='From static to non-static')
@@ -97,28 +103,31 @@ print(f"Keras-Accuracy: {keras_auc}")
 
 import hls4ml
 
+precision=str(args.iwidth + args.fwidth) + ',' + str(args.iwidth)
+
 config = hls4ml.utils.config_from_keras_model(model, granularity='name', 
-                                              default_precision=f'ap_fixed<{args.prec}>', 
+                                              default_precision=f'ap_fixed<{precision}>',
                                               default_reuse_factor=args.reuse)
 
-
+print(config)
 strat = args.strat
-if args.reuse < 2:
-    strat = 'Latency'
+#if args.reuse < 2:
+#    strat = 'Latency'
+#else:
+#    strat = 'Resource'
 
 print('STATIC: ', args.static)
 if args.static < 1:
     for layer in config['LayerName'].keys():
         print(layer)
-        if 'top' in args.nn and 'layer1' in layer:
-            print("Setting static")
-            config['LayerName'][layer]['static'] = 'false' 
+        print("Setting static")
+        config['LayerName'][layer]['static'] = 'false' 
 
 if "Resource" in  strat:
     config['Model']['Strategy'] = 'Resource'
 
 if args.new_table:
-    t_size = max( int(2**(1+float(args.prec.split(',')[1]))  ), 1024)
+    t_size = max( int(2**(1+float(precision.split(',')[1]))  ), 1024)
 
     for layer in config['LayerName'].keys():
         if 'softmax' in layer or 'sigmoid' in layer or 'relu' in layer or 'tanh' in layer:
@@ -133,7 +142,7 @@ print("-----------------------------------")
 
 print("\n-----------------------------------")
 print('Starting Convert')
-hls_model_name = '_'.join( ['model', args.prec.replace(',', '.'), 'reuse', str(args.reuse), strat ] )
+hls_model_name = '_'.join( ['model', precision.replace(',', '.'), 'reuse', str(args.reuse), strat ] )
 
 if args.static < 1:
     hls_model_name += '_NonStatic'
@@ -144,7 +153,18 @@ if args.new_table:
     hls_model_name += '_BigTable'
 
 proj_loc = out_loc_name + f'/{hls_model_name}/myproject_prj/'
-hls_model = hls4ml.converters.convert_from_keras_model(model, part='xcu250-figd2104-2-e',
+
+if 'tcn' in mod_name:
+    print('~~~ TCN is in the name, so will assume it is a CNN ~~~')
+    cfg = hls4ml.converters.create_config(backend='Vivado')
+    cfg['IOType']     = 'io_stream' # Must set this if using CNNs!
+    cfg['HLSConfig']  = config
+    cfg['KerasModel'] = model
+    cfg['OutputDir']  = proj_loc
+    cfg['XilinxPart'] = 'xcu250-figd2104-2L-e'
+    hls_model = hls4ml.converters.keras_to_hls(cfg)
+else:
+    hls_model = hls4ml.converters.convert_from_keras_model(model, part='xcu250-figd2104-2-e',
                                                        hls_config=config,
                                                        output_dir=proj_loc)
 print("-----------------------------------")
