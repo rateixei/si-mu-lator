@@ -82,29 +82,33 @@ detector:
     plane_7:
       z: 7585.7
       tilt: 0.02618 ## 1.5 degrees
-      max_hits: 1
       noise_rate: 70000
+      n_x_seg: 128
+      max_hits: 2
       type: mm
 
     plane_8:
       z: 7597.1
-      tilt: -0.02618
-      max_hits: 1
+      tilt: -0.02618 ## -1.5 degrees
       noise_rate: 70000
+      n_x_seg: 128
+      max_hits: 2
       type: mm
 
     plane_9:
       z: 7683.5
-      tilt: 0.02618
-      max_hits: 1
+      tilt: 0.02618 ## 1.5 degrees
       noise_rate: 70000
+      n_x_seg: 128
+      max_hits: 2
       type: mm
 
     plane_10:
       z: 7695.0
-      tilt: -0.02618
-      max_hits: 1
+      tilt: -0.02618 ## -1.5 degrees
       noise_rate: 70000
+      n_x_seg: 128
+      max_hits: 2
       type: mm
 
     plane_11:

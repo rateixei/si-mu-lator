@@ -9,11 +9,12 @@ iseed=datetime.now().microsecond
 here_batch      = os.getcwd() + '/'
 here            = here_batch.replace('/batch_slac', '')
 #detcard_name    = "atlas_mm_road"
-detcard_name    = "atlas_mm_vmm"
+#detcard_name    = "atlas_nsw_vmm"
+detcard_name    = "atlas_nsw_pad"
 det_card        = here+"/cards/"+detcard_name+".yml"
 
 ## events and noise
-nevs            = 1000
+nevs            = 100000
 bkg_rate        = 1
 override_total_n_noise = -1 ## only accepted if not generating muon
 
@@ -86,10 +87,11 @@ for ir in range(iseed, iseed+njobs):
     batch_exec += f"--output={here_batch}/logs/{jname}_o.txt "
     batch_exec += f"--error={here_batch}/logs/{jname}_e.txt "
     batch_exec += f"--ntasks=1 --cpus-per-task=12 --mem-per-cpu=1g "
-    batch_exec += f"--time=2:00:00 {torun}"
+    batch_exec += f"--time=4:00:00 {torun}"
 
     print(batch_exec)
     # break
     os.system(batch_exec)
+    # break
 
 
