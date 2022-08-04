@@ -1,4 +1,4 @@
-![Si-μ-lator](logo/black@3x.png?raw=true "Title")
+![Si-μ-lator](logo/black@3x_cropped.png?raw=true "Title")
 
 ## Si-μ-lator: Package for toy muon detector simulation
 
