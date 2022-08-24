@@ -21,6 +21,8 @@ parser.add_argument('-n', '--nevents', dest='nevs', type=int, required=True,
                     help='Number of events')
 parser.add_argument('--minhits', dest='min_n_hits', type=int, required=False, default=1,
                     help='Minimum number of hits per event over all detector')
+parser.add_argument('--minhitsdet', dest='min_n_hits_per_detector', nargs='*', required=False, default=None,
+                    help='Minimum number of hits per event per detector type')
 parser.add_argument('--override-n-noise-hits-per-event', dest='override_n_noise_hits_per_event', type=int, required=False, default=-1,
                     help='Override noise setting, requires exact number of noise hits in an event')                    
 parser.add_argument('-o', '--outfile', dest='outf', type=str, required=True,
@@ -35,6 +37,8 @@ parser.add_argument('-y', '--muony', nargs=2, metavar=('muymin', 'muymax'),
                     default=(0,0), type=float, help='Generated muon Y')
 parser.add_argument('-a', '--muona', nargs=2, metavar=('muamin', 'muamax'), 
                     default=(0,0), type=float, help='Generated muon angle')
+parser.add_argument('--coverage-angle', dest='covangle', action='store_true', default=False,
+                    help='Use angle distribution given by the geometrical coverage')
     
 # background simulation
 parser.add_argument('-b', '--bkgrate', dest='bkgr', type=float, default=0,
@@ -49,7 +53,14 @@ my_configs = parser.parse_args()
 my_detector = Detector()
 my_detector.read_card(my_configs.detcard)
 
-def run_event(randseed):
+def get_coverage_angles(detect, mux):
+    dz = detect.planes[-1].z - detect.planes[0].z
+    dx = 0.5*detect.planes[-1].sizes['x']
+    th_p = np.max( [np.arctan((dx-mux)/dz), 0] )
+    th_m = np.min( [-np.arctan((dx+mux)/dz), 0] )
+    return (th_m,th_p)
+
+def run_event(randseed, hits_det_dict=None):
     
     my_detector.reset_planes()
     
@@ -68,8 +79,12 @@ def run_event(randseed):
             mu_y = np.random.uniform(low=my_configs.muony[0], high=my_configs.muony[1])
             
         mu_a = 0
-        if my_configs.muona[0] < my_configs.muona[1]:
-            mu_a = np.random.uniform(low=my_configs.muona[0], high=my_configs.muona[1])
+        if my_configs.muona[0] < my_configs.muona[1] or my_configs.covangle:
+            mu_a_min = my_configs.muona[0]
+            mu_a_max = my_configs.muona[1]
+            if my_configs.covangle:
+                mu_a_min, mu_a_max = get_coverage_angles(my_detector, mu_x)
+            mu_a = np.random.uniform(low=mu_a_min, high=mu_a_max)
         
         my_detector.add_muon(mu_x=mu_x, mu_y=mu_y, mu_theta=mu_a, mu_phi=0, mu_time=0, randseed=randseed)
         mu_config = [mu_x, mu_y, mu_a, 0, 0]
@@ -81,15 +96,15 @@ def run_event(randseed):
                                 randseed=randseed+1)
     
     ## signals
-    sigs_keys = my_detector.get_signals(my_configs.min_n_hits)
+    signals = my_detector.get_signals(my_configs.min_n_hits, minhits_per_det_type=hits_det_dict)
     
-    if sigs_keys is not None:
-        return (sigs_keys[0], sigs_keys[1], mu_config)
+    if signals is not None:
+        return (signals[0], signals[1], mu_config)
     else:
         return None
     
 
-def make_signal_matrix(res):
+def make_signal_matrix(res, hit_dict=None):
     
     evs = []
    
@@ -119,6 +134,7 @@ def make_signal_matrix(res):
             this_res, this_key, muconf = iev.get()
             if len(key) == 0:
                 key = this_key[:]
+
             this_shape = this_res.shape
             out_matrix[iiev][ :this_shape[0], : ] = this_res
             mu_configs.append(muconf)
@@ -177,6 +193,17 @@ def main():
     pool = multiprocessing.Pool(ncpu)
     pbar = tqdm.tqdm(total=my_configs.nevs)
 
+    hits_det_dict = None
+    if my_configs.min_n_hits_per_detector is not None:
+        hits_det_dict = {'mm':0, 'stgc': 0, 'mdt': 0}
+        for det in hits_det_dict:
+            if det in my_configs.min_n_hits_per_detector:
+                ind_det = my_configs.min_n_hits_per_detector.index(det)
+                hits_det_dict[det] = int(my_configs.min_n_hits_per_detector[ind_det+1])
+        print(hits_det_dict)
+
+
+
     def update(*a):
         pbar.update()
 
@@ -185,7 +212,7 @@ def main():
     
     results = []
     for i in range(pbar.total):
-        this_res = pool.apply_async(run_event, args=(random_seeds[i],), callback=update)
+        this_res = pool.apply_async(run_event, args=(random_seeds[i],hits_det_dict,), callback=update)
         results.append(this_res)
         
     pool.close()

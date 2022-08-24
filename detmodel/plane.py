@@ -18,6 +18,13 @@ class DetType(Enum):
             DetType.STGC: 2
         }.get(self)
 
+    def asstr(self):
+        return {
+            DetType.MM: 'mm',
+            DetType.MDT: 'mdt',
+            DetType.STGC: 'stgc'
+        }.get(self)
+
 class Plane:
     ## planes are aligned in z
     ## tilt only on x segmentation so far
@@ -372,7 +379,11 @@ class Plane:
         sumw = 0.
         list_bkg_ix = []
         list_seg_ix = [] # store detector segment with hits
-        for ihit, hit in enumerate(self.hits):            
+        for ihit, hit in enumerate(self.hits):
+            
+            if self.max_hits > 0 and ihit == self.max_hits:
+                break
+            
             hit_ix = np.argmin( [ util.distpoint2line(xseg, hit) for xseg in self.seg_lines['x'] ] )
             ## Here we rely on the hits being ordered to avoid multiple hits on same detector segment
             if summary:

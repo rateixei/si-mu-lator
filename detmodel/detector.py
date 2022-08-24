@@ -52,7 +52,7 @@ class Detector:
         for p in self.planes:
             p.add_noise(noise_scale, override_n_noise_per_plane, randseed=randseed)
 
-    def get_signals(self, minhits=1, summary=False):
+    def get_signals(self, minhits=1, minhits_per_det_type=None, summary=False):
         signals = []
         keys = []
 
@@ -65,15 +65,20 @@ class Detector:
         if tot_hits < minhits:
             return None
         
+        tot_signals_per_det_type = {'mm':0, 'stgc':0, 'mdt':0}
         for ip,p in enumerate(self.planes):
             p_return = p.return_signal(summary)
-            
             if p_return is not None:
                 p_sig, p_keys = p_return
+                tot_signals_per_det_type[p.p_type.asstr()] += p_sig.shape[0]
                 signals.append(p_sig)
-                
                 if len(keys) == 0:
                     keys = p_keys[:]
+
+        if minhits_per_det_type is not None:
+            for dty in minhits_per_det_type:
+                if tot_signals_per_det_type[dty] < minhits_per_det_type[dty]:
+                    return None
 
         if len(signals) == 0:
             return None

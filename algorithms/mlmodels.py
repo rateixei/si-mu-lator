@@ -1,13 +1,16 @@
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.layers import Layer, Masking, Input, Dense, concatenate
+from tensorflow.keras.layers import Layer, Masking, Input, Dense, concatenate, Add
 from tensorflow.keras.layers import ReLU, BatchNormalization, Attention
 from tensorflow.keras.layers import BatchNormalization, Embedding, Lambda, TimeDistributed
-from tensorflow.keras.layers import LSTM, GRU, Conv1D, GlobalMaxPooling1D, Flatten
+from tensorflow.keras.layers import LSTM, GRU, Conv1D, GlobalMaxPooling1D, Flatten, GlobalAveragePooling1D
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.constraints import max_norm
 
 import tensorflow as tf
+
+import sys
 
 class Sum(Layer):
     """
@@ -71,7 +74,76 @@ def muon_and_hit_loss(ll, n_outs):
 
     return model_loss
 
-def class_and_regr_loss(ll):
+      
+def regr_loss(do_angle=0, pen_type=0, pen_x=True, pen_a=True, bkg_pen_x=False, bkg_pen_a=False ):
+    """
+    Custom loss that adds an event-based binary classifier loss (muon vs no muon)
+    and many hit-based binary classifier losses (muon hit vs noise hit).
+    The two components are importance weighted by input ll.
+
+    """
+    
+    half = tf.constant(0.5, dtype=tf.float32)
+    max_val = tf.constant(1, dtype=tf.float32)
+    min_val = tf.constant(-1, dtype=tf.float32)
+    pow_val = tf.constant(2, dtype=tf.float32)
+    
+    
+    reduct = tf.constant(1./100., dtype=tf.float32)
+    
+    
+    regrloss_x = tf.keras.losses.MeanAbsolutePercentageError(reduction='sum_over_batch_size')
+    regrloss_a = tf.keras.losses.MeanAbsolutePercentageError(reduction='sum_over_batch_size')
+    do_ang_const = tf.constant(1., dtype=tf.float32)
+    do_x_const = tf.constant(1., dtype=tf.float32)
+    do_clas_const = tf.constant(1., dtype=tf.float32)
+    
+    def penalty_func(pred, bound_val):
+        if pen_type == 2:
+            return tf.math.abs( pred - bound_val ) + tf.math.pow( pred - bound_val, pow_val )
+        elif pen_type == 1:
+            return tf.math.abs( pred - bound_val )
+        else:
+            return tf.math.pow( pred - bound_val, pow_val )
+
+    def model_loss(y_true, y_pred):
+        
+        # tf.print(y_true.shape, y_pred.shape, y_pred[:,0].shape, output_stream=sys.stdout)
+        regrloss_val_x = regrloss_x(y_true[:,1], y_pred[:,0])
+        # return regrloss_val_x
+
+        #regrloss_val_a = regrloss_a(y_true[:,2], y_pred[:,1])
+        
+        regr_penalty_x1 = penalty_func(y_pred[:,0], max_val) * tf.cast( tf.math.greater(y_pred[:,0], max_val), dtype=tf.float32 )
+        regr_penalty_x2 = penalty_func(y_pred[:,0], min_val) * tf.cast( tf.math.less(   y_pred[:,0], min_val), dtype=tf.float32 ) 
+        regr_penalty_x = regr_penalty_x1 + regr_penalty_x2
+        
+        # regr_penalty_a1 = penalty_func(y_pred[:,1], max_val) * tf.cast( tf.math.greater(y_pred[:,1], max_val), dtype=tf.float32 )
+        #regr_penalty_a2 = penalty_func(y_pred[:,1], min_val) * tf.cast( tf.math.less(   y_pred[:,1], min_val), dtype=tf.float32 ) 
+        #regr_penalty_a = regr_penalty_a1 + regr_penalty_a2
+        
+        loss_x = tf.cast(y_true[:,0], dtype=tf.float32)*regrloss_val_x
+        if pen_x:
+            loss_x += regr_penalty_x
+        if bkg_pen_x:
+            loss_x += (1. - tf.cast(y_true[:,0], dtype=tf.float32))*penalty_func(y_pred[:,0], 0.)
+        
+        #loss_a = tf.cast(y_true[:,0], dtype=tf.float32)*regrloss_val_a 
+        #if pen_a:
+        #    loss_a += regr_penalty_a
+        #if bkg_pen_a:
+        #    loss_a += (1. - tf.cast(y_true[:,0], dtype=tf.float32))*penalty_func(y_pred[:,1], 0.)
+        
+        
+        #loss_regr = do_x_const*loss_x + do_ang_const*loss_a
+        
+        #return reduct*loss_regr
+        return reduct*loss_x
+
+    return model_loss
+
+
+def class_and_regr_loss(ll, do_angle=0, pen_type=0, pen_x=True, pen_a=True, bkg_pen_x=False, bkg_pen_a=False, linearized=False):
     """
     Custom loss that adds an event-based binary classifier loss (muon vs no muon)
     and many hit-based binary classifier losses (muon hit vs noise hit).
@@ -84,24 +156,115 @@ def class_and_regr_loss(ll):
     max_val = tf.constant(1, dtype=tf.float32)
     min_val = tf.constant(-1, dtype=tf.float32)
     pow_val = tf.constant(2, dtype=tf.float32)
+    
+    
+    reduct = tf.constant(1./100., dtype=tf.float32)
+    
+    
     clasloss = tf.keras.losses.BinaryCrossentropy(reduction='sum_over_batch_size')
-    regrloss = tf.keras.losses.MeanSquaredError(reduction='sum_over_batch_size')
+    regrloss_x = tf.keras.losses.MeanAbsolutePercentageError(reduction='sum_over_batch_size')
+    regrloss_a = tf.keras.losses.MeanAbsolutePercentageError(reduction='sum_over_batch_size')
+    indy = 0
+    indx = 1
+    inda = 2 if do_angle else 1
+    do_ang_const = tf.constant(1., dtype=tf.float32)
+    do_x_const = tf.constant(1., dtype=tf.float32)
+    do_clas_const = tf.constant(1., dtype=tf.float32)
+    
+    def penalty_func(pred, bound_val):
+        if pen_type == 2:
+            return tf.math.abs( pred - bound_val ) + tf.math.pow( pred - bound_val, pow_val )
+        elif pen_type == 1:
+            return tf.math.abs( pred - bound_val )
+        else:
+            return tf.math.pow( pred - bound_val, pow_val )
 
     def model_loss(y_true, y_pred):
-        clasloss_val = clasloss(y_true[:,0], y_pred[:,0])
-        regrloss_val = regrloss(y_true[:,1], y_pred[:,1])
+
+        y_cpred = tf.keras.activations.sigmoid(y_pred[:,indy]) if linearized else y_pred[:,indy]
         
-        regr_penalty_1 = tf.math.pow(y_pred[:,1] - max_val, pow_val)*tf.cast( tf.math.greater(y_pred[:,1], max_val), dtype=tf.float32 )
+        clasloss_val = clasloss(y_true[:,indy], y_cpred)
+
+        regrloss_val_x = regrloss_x(y_true[:,indx]*y_true[:,indy], y_pred[:,indx]*y_true[:,indy])
+        regrloss_val_a = regrloss_a(y_true[:,inda]*y_true[:,indy], y_pred[:,inda]*y_true[:,indy])
         
-        regr_penalty_2 = tf.math.pow(y_pred[:,1] - min_val, pow_val)*tf.cast( tf.math.less(y_pred[:,1], min_val), dtype=tf.float32 )
+        regr_penalty_x1 = penalty_func(y_pred[:,indx], max_val) * tf.cast( tf.math.greater(y_pred[:,indx], max_val), dtype=tf.float32 )
+        regr_penalty_x2 = penalty_func(y_pred[:,indx], min_val) * tf.cast( tf.math.less(y_pred[:,indx], min_val), dtype=tf.float32 ) 
+        regr_penalty_x  = regr_penalty_x1 + regr_penalty_x2
         
-#         regr_penalty_1 = tf.math.pow(tf.math.abs(y_pred[:,1])-max_val, pow_val)*tf.cast( tf.math.greater(y_pred[:,1], max_val), dtype=tf.float32 )
+        regr_penalty_a1 = penalty_func(y_pred[:,inda], max_val) * tf.cast( tf.math.greater(y_pred[:,inda], max_val), dtype=tf.float32 )
+        regr_penalty_a2 = penalty_func(y_pred[:,inda], min_val) * tf.cast( tf.math.less(y_pred[:,inda], min_val), dtype=tf.float32 ) 
+        regr_penalty_a = regr_penalty_a1 + regr_penalty_a2
         
-#         regr_penalty_2 = tf.math.pow(tf.math.abs(y_pred[:,1])-min_val, pow_val)*tf.cast( tf.math.less(y_pred[:,1], min_val), dtype=tf.float32 )
+        loss_x = tf.cast(y_true[:,indy], dtype=tf.float32)*regrloss_val_x
+        if pen_x:
+            loss_x += regr_penalty_x
+        if bkg_pen_x:
+            loss_x += (1. - tf.cast(y_true[:,indy], dtype=tf.float32))*penalty_func(y_pred[:,indx], 0.)
+        
+        loss_a = tf.cast(y_true[:,indy], dtype=tf.float32)*regrloss_val_a 
+        if pen_a:
+            loss_a += regr_penalty_a
+        if bkg_pen_a:
+            loss_a += (1. - tf.cast(y_true[:,indy], dtype=tf.float32))*penalty_func(y_pred[:,inda], 0.)
         
         
-        # regrloss_val = regrloss(y_true[:,1], tf.clip_by_value(y_pred[:,1], -1, 1) )
-        total_loss =  clasloss_val + llvar*(tf.cast(y_true[:,0], dtype=tf.float32)*regrloss_val + regr_penalty_1 + regr_penalty_2)
+        loss_regr = do_x_const*loss_x + do_ang_const*loss_a
+        
+        total_loss =  do_clas_const*clasloss_val + reduct*llvar*loss_regr
+
+        return total_loss
+
+    return model_loss
+
+
+def class_and_quantregr_loss(ll, do_angle=0):
+    """
+    Custom loss that adds an event-based binary classifier loss (muon vs no muon)
+    and many hit-based binary classifier losses (muon hit vs noise hit).
+    The two components are importance weighted by input ll.
+
+    """
+    
+    def tilted_loss(q,y,f):
+        e = (y-f)
+        return tf.math.reduce_mean(tf.math.maximum(q*e, (q-1)*e), axis=-1)
+    
+    llvar = tf.constant(ll, dtype=tf.float32)
+    half = tf.constant(0.5, dtype=tf.float32)
+    max_val = tf.constant(1, dtype=tf.float32)
+    min_val = tf.constant(-1, dtype=tf.float32)
+    pow_val = tf.constant(2, dtype=tf.float32)
+    clasloss = tf.keras.losses.BinaryCrossentropy(reduction='sum_over_batch_size')
+    regrloss_x = tf.keras.losses.MeanAbsoluteError(reduction='sum_over_batch_size')
+    regrloss_a = tf.keras.losses.MeanAbsoluteError(reduction='sum_over_batch_size')
+    indy = 0
+    indx = 1
+    indqx = 2
+    inda = 3 if do_angle else 1
+    indqa = 4 if do_angle else 1
+
+
+    def model_loss(y_true, y_pred):
+        clasloss_val = clasloss(y_true[:,indy], y_pred[:,indy])
+        
+        regrloss_val_x = regrloss_x(y_true[:,indx], y_pred[:,indx])
+        regrloss_val_qx = tilted_loss(0.84,y_true[:,indx], y_pred[:,indx])
+        
+        regrloss_val_a = regrloss_a(y_true[:,inda], y_pred[:,inda])
+        regrloss_val_qa = tilted_loss(0.84,y_true[:,inda], y_pred[:,inda])
+        
+        regr_penalty_1 = tf.math.pow(y_pred[:,indx] - max_val, pow_val)*tf.cast( tf.math.greater(y_pred[:,indx], max_val), dtype=tf.float32 )
+        regr_penalty_2 = tf.math.pow(y_pred[:,indx] - min_val, pow_val)*tf.cast( tf.math.less(y_pred[:,indx], min_val), dtype=tf.float32 ) 
+        regr_penalty_x = regr_penalty_1 + regr_penalty_2
+        
+        loss_x = tf.cast(y_true[:,indy], dtype=tf.float32)*(regrloss_val_x + regrloss_val_qx) + regr_penalty_x 
+        loss_a = tf.cast(y_true[:,indy], dtype=tf.float32)*(regrloss_val_a + regrloss_val_qa)
+        
+        loss_regr = loss_x + do_angle*loss_a
+        
+        total_loss =  clasloss_val + llvar*loss_regr
+
         return total_loss
 
     return model_loss
@@ -405,54 +568,118 @@ def model_mlp_muon(input_shape,
     
 
 def model_tcn_muon(input_shape,
-        convs_1ds=[ (64,3), (64,3) ],
+        convs_1ds=[ (64,3,1), (64,3,1) ],
         F_layers=[20,10], 
-        batchnorm=True, 
+        batchnorm_dense=False,
+        batchnorm_conv=False, 
         do_reg_out=0,
         l1_reg=0, l2_reg=0,
-        ll=0):
+        ll=0,
+        pen_type=0, pen_x=True, pen_a=True, bkg_pen_x=False, bkg_pen_a=False,
+        reg_bias=True,
+        pooling='max',
+        residual=False):
 
     inputs = Input(shape=(input_shape[0], input_shape[1],), name="inputs")
+    
+    def residual_block(irblock, x, nfilters, ksize, strides):
+        ishape=(x.shape[1], x.shape[2])
+        
+        x = BatchNormalization()(x)
+        
+        fx = Conv1D(nfilters, kernel_size=ksize, strides=strides,
+                kernel_initializer='variance_scaling', padding='same',
+                kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
+                input_shape=ishape, name=f"RB_C1D_{irblock}"
+               )(x)
+
+        fx = BatchNormalization()(fx)
+        
+        fx = tf.keras.activations.relu(fx, max_value=1.0)
+        
+        fx = Conv1D(nfilters, kernel_size=ksize, strides=strides,
+                    kernel_initializer='variance_scaling', padding='same',
+                    kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
+                    name=f"RB_C1D_{irblock}_1"
+                    )(fx)
+        
+        fx = BatchNormalization()(fx)
+        
+        if nfilters > ishape[1]:
+            dim_diff = nfilters - ishape[1] - 1
+            x = tf.pad( x, tf.constant([ [0, 0], [0, 0], [  dim_diff  , 1] ] ))
+            
+        out = Add()([x,fx])
+        out = tf.keras.activations.relu(out, max_value=1.0)
+        
+        return out
+    
 
     for ic1d,c1d in enumerate(convs_1ds):
-        if ic1d == 0:
-            conv = Conv1D(filters=c1d[0], kernel_size=c1d[1], strides=1, 
-                          activation='relu', kernel_initializer='variance_scaling', kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
-                          input_shape=input_shape, name=f"C1D_{ic1d}" )(inputs)
+        if residual:
+            conv = residual_block(irblock=ic1d, x=inputs, nfilters=c1d[0], ksize=c1d[1], strides=c1d[2])
         else:
-            conv = Conv1D(filters=c1d[0], kernel_size=c1d[1], strides=1, 
-                          activation='relu', kernel_initializer='variance_scaling', kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
-                          name=f"C1D_{ic1d}" )(conv)
+            if ic1d == 0:
+                conv = Conv1D(filters=c1d[0], kernel_size=c1d[1], strides=c1d[2], 
+                              activation='relu', kernel_initializer='variance_scaling', kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
+                              kernel_constraint=max_norm(1.),
+                              input_shape=input_shape, name=f"C1D_{ic1d}" )(inputs)
 
-    hidden = GlobalMaxPooling1D()(conv)
-    # hidden = Flatten()(conv)
+                # if batchnorm_conv: conv = BatchNormalization()(conv)
+
+            else:
+                conv = Conv1D(filters=c1d[0], kernel_size=c1d[1], strides=c1d[2], 
+                              activation='relu', kernel_initializer='variance_scaling', kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
+                              kernel_constraint=max_norm(1.),
+                              name=f"C1D_{ic1d}" )(conv)
+
+                # if batchnorm_conv: conv = BatchNormalization()(conv)
+
+    if 'max' in pooling:
+        hidden = GlobalMaxPooling1D()(conv)
+    elif 'average' in pooling:
+        hidden = GlobalAveragePooling1D()(conv)
+    elif 'flat' in pooling:
+        hidden = Flatten()(conv)
 
     for iF,F_l in enumerate(F_layers):
-        hidden = Dense(F_l, activation='relu', kernel_initializer='variance_scaling', name=f'F_dense_{iF}')(hidden)
+        hidden = Dense(F_l, activation='relu', kernel_initializer='variance_scaling', kernel_constraint=max_norm(1.), bias_constraint=max_norm(1.), name=f'F_dense_{iF}')(hidden)
 
-    if do_reg_out==False:
+    if batchnorm_dense: hidden = BatchNormalization()(hidden)
+    
+    if do_reg_out==0:
         out = Dense(1, activation='sigmoid', name='output')(hidden)
     else:
-        # hidden_clas = Dense(5, activation='relu', name='hidden_clas')(hidden)
-        out_clas = Dense(1, activation='sigmoid', name='output_clas')(hidden)
+        outputs = []
 
-        # hidden_regr = Dense(5, activation='relu', name='hidden_regr0')(hidden)
-        # hidden_regr = Dense(3, activation='relu', name='hidden_regr1')(hidden_regr)
-        # hidden_regr = Dense(2, activation='relu', name='hidden_regr2')(hidden_regr)
-        out_regr = Dense(1, activation='linear', name='output_regr')(hidden)
+        #out_clas = Dense(1, activation='sigmoid', name='output_clas')(hidden)
+        #outputs.append(out_clas)
 
-        out = concatenate([out_clas, out_regr], name="combined_output")
+        #for ior in range(do_reg_out):
+        #if do_reg_out > 0:
+        outputs.append(Dense(do_reg_out+1, activation='linear', kernel_initializer='variance_scaling', 
+                             kernel_constraint=max_norm(1.), bias_constraint=max_norm(1.),
+                                 use_bias=reg_bias, name=f'output')(hidden))
 
-    model = Model(inputs=inputs, outputs=out)
-    model.summary()
+        # out = concatenate(outputs, name="combined_output")
 
-    if do_reg_out==False:
+    if do_reg_out==0:
+        model = Model(inputs=inputs, outputs=out)
+        model.summary()
+    
         my_loss = tf.keras.losses.BinaryCrossentropy(reduction='sum_over_batch_size')
         opt = Adam(learning_rate=0.01)
         model.compile(loss=my_loss, optimizer=opt, metrics=['accuracy'])
     else:
-        opt = Adam(learning_rate=0.01)
-        combined_loss = class_and_regr_loss(ll)
-        model.compile(loss=combined_loss, optimizer=opt)
+        model = Model(inputs=inputs, outputs=outputs)
+        model.summary()
+
+        #closs = tf.keras.losses.BinaryCrossentropy(reduction='sum_over_batch_size') 
+        #rloss = regr_loss(do_angle=(do_reg_out>1), pen_type=0, pen_x=True, pen_a=True, bkg_pen_x=False, bkg_pen_a=False)
+        combloss = class_and_regr_loss(ll, do_angle=(do_reg_out>1), pen_type=pen_type, pen_x=pen_x, pen_a=pen_a, bkg_pen_x=bkg_pen_x, bkg_pen_a=bkg_pen_a, linearized=True)
+
+        opt = Adam(learning_rate=0.001)
+        # model.compile(loss=[closs, rloss], loss_weights=[1,1], optimizer=opt)
+        model.compile(loss=combloss, optimizer=opt)
 
     return model

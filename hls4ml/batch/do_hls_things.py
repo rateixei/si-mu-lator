@@ -9,10 +9,16 @@ import h5py
 
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import model_from_json, load_model
+from tensorflow import keras
 
-from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.metrics import accuracy_score, roc_auc_score, mean_squared_error
 
 import argparse
+
+def sigmoid(x):
+    return 1/(1 + np.exp(-x))
+
+linearized = True
 
 parser = argparse.ArgumentParser(description='Do HLS Things')
 
@@ -72,9 +78,12 @@ except FileExistsError:
     pass
 
 print('--------- Loading network')
-arch_json = open(mod_arch, 'r').read()
-model = model_from_json(arch_json)
-model.load_weights(mod_weig)
+# arch_json = open(mod_arch, 'r').read()
+# model = model_from_json(arch_json)
+# model.load_weights(mod_weig)
+
+model = keras.models.load_model(mod_arch.replace('arch.json', '') ,compile=False)
+model.summary()
 
 if model is None:
     print("Model is none, exiting")
@@ -93,13 +102,17 @@ else:
 
 print('--------- Keras testing')
 y_test_keras = model.predict(x_test, batch_size=2**10)
+#print(len(y_test_keras), y_test_keras[0].shape, y_test_keras[1].shape)
 print(y_test_keras)
-print(y_test)
-print()
-
-keras_auc = roc_auc_score(y_test, y_test_keras)
+#sys.exit()
+y_c_keras = sigmoid(y_test_keras[:,0]) if linearized else y_test_keras[:,0]
+keras_auc = roc_auc_score(y_test[:,0], y_c_keras)
+keras_msex = mean_squared_error(y_test[:,1][y_test[:,0]==1], y_test_keras[:,1][y_test[:,0]==1])
+keras_msea = mean_squared_error(y_test[:,2][y_test[:,0]==1], y_test_keras[:,2][y_test[:,0]==1])
 
 print(f"Keras-Accuracy: {keras_auc}")
+print(f"Keras-MSE-X: {keras_msex}")
+print(f"Keras-MSE-A: {keras_msea}")
 
 import hls4ml
 
@@ -134,6 +147,9 @@ if args.new_table:
             config['LayerName'][layer]['table_t'] = 'ap_fixed<18,1>'
             config['LayerName'][layer]['table_size'] = f'{t_size}'
 
+#for layer in config['LayerName'].keys():
+#    print(config['LayerName'][layer]['class_name'])
+
 print("-----------------------------------")
 print("Configuration")
 # plotting.print_dict(config)
@@ -154,7 +170,7 @@ if args.new_table:
 
 proj_loc = out_loc_name + f'/{hls_model_name}/myproject_prj/'
 
-if 'tcn' in mod_name:
+if 'tcn' in mod_name or 'TCN' in mod_name:
     print('~~~ TCN is in the name, so will assume it is a CNN ~~~')
     cfg = hls4ml.converters.create_config(backend='Vivado')
     cfg['IOType']     = 'io_stream' # Must set this if using CNNs!
@@ -180,9 +196,19 @@ print("\n-----------------------------------")
 print('Starting Predict')
 print(x_test.shape)
 x_test_cont = np.ascontiguousarray(x_test)
+print("predicting...")
 y_test_hls = hls_model.predict(x_test_cont)
-hls_auc = roc_auc_score(y_test, y_test_hls)
+print(y_test_hls)
+#sys.exit()
+y_c_hls = sigmoid(y_test_hls[:,0]) if linearized else y_test_hls[:,0]
+hls_auc = roc_auc_score(y_test[:,0], y_c_hls)
+hls_msex = mean_squared_error(y_test[:,1][y_test[:,0]==1], y_test_hls[:,1][y_test[:,0]==1])
+hls_msea = mean_squared_error(y_test[:,2][y_test[:,0]==1], y_test_hls[:,2][y_test[:,0]==1])
+
 print(f"HLS-Accuracy: {hls_auc}")
+print(f"HLS-MSE-X: {hls_msex}")
+print(f"HLS-MSE-A: {hls_msea}")
+
 print('Done HLS predict')
 print("-----------------------------------")
 
@@ -204,9 +230,13 @@ if args.viv:
         with redirect_stdout(f):
             hls4ml.report.read_vivado_report(proj_loc)
     with open(out_loc_name+f'/reports/{hls_model_name}.txt', 'a') as f:
-        f.write( f"KERAS_AUC {keras_auc}")
+        f.write( f"KERAS_AUC {keras_auc}\n")
+        f.write( f"KERAS_MSE_X {keras_msex}\n")
+        f.write( f"KERAS_MSE_A {keras_msea}\n")
         f.write( "\n" )
-        f.write( f"HLS_AUC {hls_auc}" )
+        f.write( f"HLS_AUC {hls_auc}\n" )
+        f.write( f"HLS_MSE_X {hls_msex}\n" )
+        f.write( f"HLS_MSE_A {hls_msea}\n" )
         f.write( "\n" )
     print('Done Vivado 2019.2', out_loc_name+f'/reports/{hls_model_name}.txt')
     print("-----------------------------------")
