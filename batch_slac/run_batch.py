@@ -2,7 +2,8 @@ import os
 import sys
 from datetime import datetime
 
-njobs=100
+njobs=200
+#njobs=1
 iseed=datetime.now().microsecond
 
 ## setup
@@ -10,21 +11,25 @@ here_batch      = os.getcwd() + '/'
 here            = here_batch.replace('/batch_slac', '')
 #detcard_name    = "atlas_mm_road"
 #detcard_name    = "atlas_nsw_vmm"
-detcard_name    = "atlas_nsw_pad"
+#detcard_name    = "atlas_nsw_pad_z0"
+#detcard_name    = "atlas_nsw_pad_z0_stgc20"
+#detcard_name    = "atlas_nsw_pad_z0_stgc20Max1"
+detcard_name    = "atlas_nsw_pad_z0_normalRate"
 det_card        = here+"/cards/"+detcard_name+".yml"
 
 ## events and noise
-nevs            = 100000
+nevs            = 2000
 bkg_rate        = 1
 override_total_n_noise = -1 ## only accepted if not generating muon
+#det_noise_dict = " --minhitsdet stgc 5 "
+det_noise_dict = ""
 
 ## muon
-generate_muon   = False
-# muon_x_range    = [-100, -90]
-# muon_a_range    = [3.141/2, 3.142/2]
-muon_a_range    = []
-muon_x_range    = [-14.0,14.0]
-# muon_a_range    = []
+generate_muon   = True
+muon_x_range    = [-20.0,20.0]
+muon_a_range    = [-3*1e-3, 3*1e-3]
+do_cov_angle    = False
+#muon_a_range    = []
 
 out_loc         = here_batch+f"/out_files/{detcard_name}_bkgr_{bkg_rate}"
 
@@ -41,17 +46,23 @@ exec_file =  '''#!/bin/bash
 
 SINGULARITY_IMAGE_PATH=/sdf/sw/ml/slac-ml/20200227.0/slac-jupyterlab@20200227.0.sif
 
-singularity exec --nv -B /sdf,/gpfs,/scratch,/lscratch ${SINGULARITY_IMAGE_PATH} python _HERE_/si_mu_late.py _OPTIONS_ -r $1
+singularity exec --nv -B /sdf,/gpfs,/scratch,/lscratch ${SINGULARITY_IMAGE_PATH} python _HERE_/si_mu_late.py _OPTIONS_ -r $1 _det_noise_
 
 '''
 
 exec_file = exec_file.replace("_HERE_", here)
+exec_file = exec_file.replace("_det_noise_", det_noise_dict)
 base_name = f"{detcard_name}.nevs_{nevs}.bkgr_{bkg_rate}"
 
 if generate_muon:
     base_name = 'WithMuon.' + base_name
-    if len(muon_x_range) > 0: base_name += f'.mux.{muon_x_range[0]}.{muon_x_range[1]}'
-    if len(muon_a_range) > 0: base_name += f'.mua.{muon_a_range[0]}.{muon_a_range[1]}'
+    if len(muon_x_range) > 0: 
+        base_name += f'.mux.{muon_x_range[0]}.{muon_x_range[1]}'
+    if do_cov_angle:
+        base_name += '.CoverageAngle'
+    else:
+        if len(muon_a_range) > 0: 
+            base_name += f'.mua.{muon_a_range[0]}.{muon_a_range[1]}'
 else:
     base_name = 'NoMuon.' + base_name
     if override_total_n_noise > 0:
@@ -64,8 +75,13 @@ options += f"-b {bkg_rate} "
 
 if generate_muon:
     options += "-m "
-    if len(muon_x_range) > 0: options += f"-x {muon_x_range[0]} {muon_x_range[1]} "
-    if len(muon_a_range) > 0: options += f"-a {muon_a_range[0]} {muon_a_range[1]} "
+    if len(muon_x_range) > 0: 
+        options += f"-x {muon_x_range[0]} {muon_x_range[1]} "
+    if do_cov_angle:
+        options += " --coverage-angle "
+    else:
+        if len(muon_a_range) > 0: 
+            options += f"-a {muon_a_range[0]} {muon_a_range[1]} "
 else:
     if override_total_n_noise > 0:
         options += f" --override-n-noise-hits-per-event {override_total_n_noise} --minhits {override_total_n_noise} "
@@ -87,7 +103,7 @@ for ir in range(iseed, iseed+njobs):
     batch_exec += f"--output={here_batch}/logs/{jname}_o.txt "
     batch_exec += f"--error={here_batch}/logs/{jname}_e.txt "
     batch_exec += f"--ntasks=1 --cpus-per-task=12 --mem-per-cpu=1g "
-    batch_exec += f"--time=4:00:00 {torun}"
+    batch_exec += f"--time=10:00:00 {torun}"
 
     print(batch_exec)
     # break

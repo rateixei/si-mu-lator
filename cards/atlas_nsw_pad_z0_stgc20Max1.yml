@@ -27,61 +27,65 @@ detector:
   planes:
 
     plane_1:
-      z: 7460.5
+      z: 0.0
       offset: 1.6  ## staggering by half strip pitch
       width_t: 25  ## 1 BC = 25 ns
       n_t_seg: 1
       n_x_seg: 14
       x_res: 0.2   ## 200 micron spatial resolution
       t_res:   5   ## timing resolution in ns
-      noise_rate: 336000
+      noise_rate: 6720000
+      max_hits: 1
       type: stgc
 
     plane_2:
-      z: 7465.6
+      z: 5.1
       width_t: 25
       n_t_seg: 1
       n_x_seg: 14
       x_res: 0.2
       t_res:   5
-      noise_rate: 336000
+      noise_rate: 6720000
+      max_hits: 1
       type: stgc
 
     plane_3:
-      z: 7482.4
+      z: 21.9
       offset: 1.6
       width_t: 25
       n_t_seg: 1
       n_x_seg: 14
       x_res: 0.2
       t_res:   5
-      noise_rate: 336000
+      noise_rate: 6720000
+      max_hits: 1
       type: stgc
 
     plane_4:
-      z: 7487.5
+      z: 27.0
       width_t: 25
       n_t_seg: 1
       n_x_seg: 14
       x_res: 0.2
       t_res:   5
-      noise_rate: 336000
+      noise_rate: 6720000
+      max_hits: 1
       type: stgc
 
     plane_5:
-      z: 7552.5
+      z: 92.0
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_6:
-      z: 7564.0
+      z: 103.5
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_7:
-      z: 7585.7
+      z: 127.2
       tilt: 0.02618 ## 1.5 degrees
       noise_rate: 70000
       n_x_seg: 128
@@ -89,7 +93,7 @@ detector:
       type: mm
 
     plane_8:
-      z: 7597.1
+      z: 136.6
       tilt: -0.02618 ## -1.5 degrees
       noise_rate: 70000
       n_x_seg: 128
@@ -97,7 +101,7 @@ detector:
       type: mm
 
     plane_9:
-      z: 7683.5
+      z: 178.0
       tilt: 0.02618 ## 1.5 degrees
       noise_rate: 70000
       n_x_seg: 128
@@ -105,7 +109,7 @@ detector:
       type: mm
 
     plane_10:
-      z: 7695.0
+      z: 234.5
       tilt: -0.02618 ## -1.5 degrees
       noise_rate: 70000
       n_x_seg: 128
@@ -113,56 +117,60 @@ detector:
       type: mm
 
     plane_11:
-      z: 7716.7
+      z: 256.2
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_12:
-      z: 7728.1
+      z: 267.6
       max_hits: 1
       noise_rate: 70000
       type: mm
 
     plane_13:
-      z: 7794.5
+      z: 334.5
       width_t: 25
       n_t_seg: 1
       n_x_seg: 14
       x_res: 0.2
       t_res:   5
-      noise_rate: 336000
+      noise_rate: 6720000
+      max_hits: 1
       type: stgc
 
     plane_14:
-      z: 7799.6
+      z: 339.1
       offset: 1.6
       width_t: 25
       n_t_seg: 1
       n_x_seg: 14
       x_res: 0.2
       t_res:   5
-      noise_rate: 336000
+      noise_rate: 6720000
+      max_hits: 1
       type: stgc
 
     plane_15:
-      z: 7816.4
+      z: 355.9
       width_t: 25
       n_t_seg: 1
       n_x_seg: 14
       x_res: 0.2
       t_res:   5
-      noise_rate: 336000
+      noise_rate: 6720000
+      max_hits: 1
       type: stgc
 
     plane_16:
-      z: 7821.5
+      z: 361.0
       width_t: 25
       n_t_seg: 1
       offset: 1.6
       n_x_seg: 14
       x_res: 0.2
       t_res:   5
-      noise_rate: 336000
+      noise_rate: 6720000
+      max_hits: 1
       type: stgc
       

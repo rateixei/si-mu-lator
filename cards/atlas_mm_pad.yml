@@ -26,48 +26,6 @@ detector:
 
   planes:
 
-    plane_1:
-      z: 7460.5
-      offset: 1.6  ## staggering by half strip pitch
-      width_t: 25  ## 1 BC = 25 ns
-      n_t_seg: 1
-      n_x_seg: 14
-      x_res: 0.2   ## 200 micron spatial resolution
-      t_res:   5   ## timing resolution in ns
-      noise_rate: 336000
-      type: stgc
-
-    plane_2:
-      z: 7465.6
-      width_t: 25
-      n_t_seg: 1
-      n_x_seg: 14
-      x_res: 0.2
-      t_res:   5
-      noise_rate: 336000
-      type: stgc
-
-    plane_3:
-      z: 7482.4
-      offset: 1.6
-      width_t: 25
-      n_t_seg: 1
-      n_x_seg: 14
-      x_res: 0.2
-      t_res:   5
-      noise_rate: 336000
-      type: stgc
-
-    plane_4:
-      z: 7487.5
-      width_t: 25
-      n_t_seg: 1
-      n_x_seg: 14
-      x_res: 0.2
-      t_res:   5
-      noise_rate: 336000
-      type: stgc
-
     plane_5:
       z: 7552.5
       max_hits: 1
@@ -123,46 +81,3 @@ detector:
       max_hits: 1
       noise_rate: 70000
       type: mm
-
-    plane_13:
-      z: 7794.5
-      width_t: 25
-      n_t_seg: 1
-      n_x_seg: 14
-      x_res: 0.2
-      t_res:   5
-      noise_rate: 336000
-      type: stgc
-
-    plane_14:
-      z: 7799.6
-      offset: 1.6
-      width_t: 25
-      n_t_seg: 1
-      n_x_seg: 14
-      x_res: 0.2
-      t_res:   5
-      noise_rate: 336000
-      type: stgc
-
-    plane_15:
-      z: 7816.4
-      width_t: 25
-      n_t_seg: 1
-      n_x_seg: 14
-      x_res: 0.2
-      t_res:   5
-      noise_rate: 336000
-      type: stgc
-
-    plane_16:
-      z: 7821.5
-      width_t: 25
-      n_t_seg: 1
-      offset: 1.6
-      n_x_seg: 14
-      x_res: 0.2
-      t_res:   5
-      noise_rate: 336000
-      type: stgc
-      

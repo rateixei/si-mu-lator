@@ -10,9 +10,10 @@ import trainingvariables
 from glob import glob
 from sklearn.utils import shuffle
 
-files_loc = "/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/20220628/"
-fdir = "atlas_mm_vmm_bkgr_1_TEST"
-nevs=10000
+files_loc = "/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/stgc/"
+# fdir = "atlas_mm_vmm_bkgr_1_TEST"
+fdir = "atlas_nsw_pad_z0_stgc20Max1_bkgr_1_CovAngle_TRAIN"
+nevs=100000
 do_det_matrix=False
 det_card="../cards/atlas_mm_vmm.yml"
 
@@ -31,11 +32,20 @@ for tv in training_vars:
     vars_of_interest[sig_keys.index(tv)] = 1
 X = X_prep[:,:,vars_of_interest]
 
-target = Y_mu
+mult_fact_X = max(data['ev_mu_x'])
+mult_fact_a = max(data['ev_mu_theta'])
+print(f"#&#&#&#&#&#&# X mult fact = {mult_fact_X}, Angle mult fact = {mult_fact_a} #&#&#&#&#&#&#")
+data_ev_mu_x = (data['ev_mu_x'])/mult_fact_X
+data_ev_mu_a = (data['ev_mu_theta'])/mult_fact_a
 
-X_test, Y_test = shuffle(X, target)
+X_test, Y_clas_test, Y_xreg_test, Y_areg_test = shuffle(X, Y_mu, data_ev_mu_x, data_ev_mu_a)
 
-out_name_tag = f"test_{nevs}_padMat_noSig.npy"
+Y_test = np.zeros( (Y_clas_test.shape[0], 3 ) )
+Y_test[:,0] = Y_clas_test
+Y_test[:,1] = Y_xreg_test
+Y_test[:,2] = Y_areg_test
+
+out_name_tag = f"test_{nevs}_padMat_noSig_{fdir}.npy"
 if do_det_matrix:
     det_card_name = det_card.split('/')[-1].replace('.yml', '')
     out_name_tag = f"test_{nevs}_detMat_{det_card_name}.npy"

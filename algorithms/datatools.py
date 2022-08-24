@@ -17,6 +17,10 @@ def make_data_matrix(all_files, max_files=50, masking99 = False, sort_by='none')
     
         this_file = h5py.File( fname, 'r' )
         
+        if 'signals' not in this_file:
+            print('Defective file...', fname)
+            continue
+        
         if ifile == 0:
             sig_keys = [ vv.decode("utf-8") for vv in np.array(this_file['signal_keys']) ]
             
@@ -94,6 +98,13 @@ def training_prep(X, sig_keys):
         print('Data already prepared?')
         # return X
     
+    maxs = {}
+    
+    for sk in sig_keys:
+        if 'is_signal' in sk: continue
+        tmax = np.max(X[:,:,sig_keys.index(sk)])
+        maxs[sk] = tmax if tmax > 0 else 1
+    
     for iev in tqdm(range( X.shape[0] )):
         ev = X[iev]
         
@@ -105,14 +116,33 @@ def training_prep(X, sig_keys):
         X_out[iev,valid_hits,:-1] = np.copy(ev[valid_hits,:])
         X_out[iev,valid_hits, -1] = np.ones_like(X_out[iev,valid_hits, -1])
         
-        delta_z_valid_hits = X_out[iev,valid_hits,sig_keys.index('z')].max() - X_out[iev,valid_hits,sig_keys.index('z')].min()
+        # delta_z_valid_hits = X_out[iev,valid_hits,sig_keys.index('z')].max() - X_out[iev,valid_hits,sig_keys.index('z')].min()
         
-        if delta_z_valid_hits < 1e-5:
-            delta_z_valid_hits = X_out[iev,valid_hits,sig_keys.index('z')].max()
+        # if delta_z_valid_hits < 1e-5:
+            # delta_z_valid_hits = X_out[iev,valid_hits,sig_keys.index('z')].max()
             
-        X_out[iev,valid_hits,sig_keys.index('z')] = ( X_out[iev,valid_hits,sig_keys.index('z')] - delta_z_valid_hits)/delta_z_valid_hits
+        for sk in sig_keys:
+            if 'is_signal' in sk: continue
+            if 'time' in sk:
+                X_out[iev, valid_hits,sig_keys.index(sk)] = np.floor( X_out[iev, valid_hits,sig_keys.index(sk)]*(4/100) )/4.
+            else:
+                X_out[iev, valid_hits,sig_keys.index(sk)] = X_out[iev, valid_hits,sig_keys.index(sk)]/maxs[sk]
+            
+        # X_out[iev,valid_hits,sig_keys.index('z')] = ( X_out[iev,valid_hits,sig_keys.index('z')] - X_out[iev,valid_hits,sig_keys.index('z')].min())/delta_z_valid_hits
         
-        X_out[iev,valid_hits,sig_keys.index('ptilt')] = X_out[iev,valid_hits,sig_keys.index('ptilt')]/0.02618
+        # X_out[iev,valid_hits,sig_keys.index('time')] = np.ceil( X_out[iev,valid_hits,sig_keys.index('time')] )
+        
+        # X_out[iev,valid_hits,sig_keys.index('ptilt')] = X_out[iev,valid_hits,sig_keys.index('ptilt')]/0.02618
+        
+        ## sTGC events formating
+        
+        valid_hits_stg = (hit_types > -90)*(ev[:,sig_keys.index('ptype')] == 2)
+        
+        X_out[iev,valid_hits_stg,sig_keys.index('projX_at_middle_x')] = np.copy( X_out[iev, valid_hits_stg,sig_keys.index('x')] )
+        
+        X_out[iev,valid_hits_stg,sig_keys.index('projX_at_rightend_x')] = np.zeros_like(ev[valid_hits_stg,sig_keys.index('projX_at_rightend_x')])
+        
+        X_out[iev,valid_hits_stg,sig_keys.index('time')] = np.zeros_like(ev[valid_hits_stg,sig_keys.index('time')])
     
     print('Output data matrix shape:', X_out.shape)
     return X_out
