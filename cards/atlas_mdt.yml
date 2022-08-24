@@ -7,7 +7,7 @@
 
 detector:
   name: ATLASMDT_EML  ## name must include MDT to that hits are handled properly
-  det_width_t: 750 ## ns window
+  det_width_t: 1000 ## ns window
   det_n_t_seg: 25 ## window segmentation
   det_width_x: 300
   det_width_y: 300

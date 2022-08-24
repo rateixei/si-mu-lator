@@ -115,6 +115,8 @@ def plot_det_xz(det, ax, draw_muon=False, draw_allhits=False):
     max_y = 0
     max_z = 0
     min_z = 99999
+    hitpos_mu = []
+    hitpos_bg = []
 
     # Loop over detector planes
     for ip,p in enumerate(det.planes):
@@ -184,6 +186,8 @@ def plot_det_xz(det, ax, draw_muon=False, draw_allhits=False):
             elif p.p_type == DetType.MDT:
                 rdrift = hit.rdrift
                 hitpos = sympy.Point(p.seg_lines['x'][hit.seg_ix].line.p1.x, hit.z, evaluate=False)
+                if hit.is_muon: hitpos_mu.append(hitpos)
+                else:           hitpos_bg.append(hitpos)
             elif p.p_type == DetType.STGC:
                 hit_ix = np.argmin( [ util.distpoint2line(xseg, hit) for xseg in p.seg_lines['x'] ] )
                 if draw_allhits or (p.seg_lines['x'][hit_ix].is_sig and hit.rdrift > 9998.):
@@ -217,5 +221,24 @@ def plot_det_xz(det, ax, draw_muon=False, draw_allhits=False):
 
     ax.set_xlabel('x (mm)', fontsize=15)
     ax.set_ylabel('z (mm)', fontsize=15)
+"""
+    # draw histogram with theta angle of muon and background noise hits
+     print('****', hitpos_mu)
+    theta_mu = np.zeros(len(hitpos_mu))
+    x_offset = 3000.
+    y_offset = 8000.
+    print('theta offset', 0.5*np.pi - np.arctan2(y_offset,x_offset))
+    for ihit, hit in enumerate(hitpos_mu):
+        print(hit)
+        theta_mu[ihit] = np.arctan2(float(hit.y)+y_offset, float(hit.x)+x_offset)
+    theta_bg = np.zeros(len(hitpos_bg))
+    for ihit, hit in enumerate(hitpos_bg):
+        theta_bg[ihit] = np.arctan2(float(hit.y)+y_offset, float(hit.x)+x_offset)
 
-    
+    fig = plt.figure(figsize=(8,6))
+    bins_list = np.linspace(np.min(theta_bg), np.max(theta_bg), 11)
+    plt.hist(theta_bg, bins=bins_list, color='m')
+    plt.hist(theta_mu, bins=bins_list, color='green')
+    plt.xlabel('theta')
+    plt.ylabel('tubes')
+ """    
