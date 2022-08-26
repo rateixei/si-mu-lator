@@ -171,6 +171,8 @@ def detector_matrix(X, sig_keys, detcard):
         z_hit_planes += n_hits*[p['z']]
         p_t_width = p['width_t'] if 'width_t' in p else specs['det_width_t']
         t_width_planes += n_hits*[p_t_width]
+        
+    print(z_hit_planes)
     
     X_out = np.zeros( (X.shape[0], len(z_hit_planes), X.shape[2]+1) )
     if 'is_signal' not in sig_keys:
@@ -191,22 +193,20 @@ def detector_matrix(X, sig_keys, detcard):
                     allhit+=1
                     break
 
-        hit_types = ev[:,sig_keys.index('is_muon')]
-        valid_hits = hit_types > -90
-
         for sk in sig_keys:
             if 'is_signal' in sk: continue
             elif 'time' in sk:
-                X_out[iev,valid_hits,sig_keys.index('time')] = np.floor( X_out[iev, valid_hits,sig_keys.index(sk)]*(4/100) )/4.
+                X_out[iev,:,sig_keys.index('time')] = np.floor( X_out[iev, :,sig_keys.index(sk)]*(4/100) )/4.
             elif 'z' in sk:
-                X_out[iev,valid_hits,sig_keys.index('z')]    = X_out[iev,valid_hits,sig_keys.index('z')]/np.max( z_hit_planes )
+                X_out[iev,:,sig_keys.index('z')]    = X_out[iev,:,sig_keys.index('z')]/np.max( z_hit_planes )
+            else:
+                X_out[iev,:,sig_keys.index(sk)] = X_out[iev, :,sig_keys.index(sk)]/maxs[sk]
 
-        valid_hits_stg = (hit_types > -90)*(ev[:,sig_keys.index('ptype')] == 2)
+        hits_stg = (ev[:,sig_keys.index('ptype')] == 2)
 
-        if hit[sig_keys.index('ptype')] == 2 and hit[sig_keys.index('is_muon')] >-90:
-            X_out[iev,valid_hits_stg,sig_keys.index('projX_at_middle_x')] = np.copy( X_out[iev,valid_hits_stg,sig_keys.index('x')] )
-            X_out[iev,valid_hits_stg,sig_keys.index('projX_at_rightend_x')] = np.zeros_like( X_out[iev,valid_hits_stg,sig_keys.index('projX_at_rightend_x')] )
-            X_out[iev,valid_hits_stg,sig_keys.index('time')] = np.zeros_like( X_out[iev,valid_hits_stg,sig_keys.index('projX_at_rightend_x')] )
+        X_out[iev,hits_stg,sig_keys.index('projX_at_middle_x')] =         np.copy( X_out[iev,hits_stg,sig_keys.index('x')] )
+        X_out[iev,hits_stg,sig_keys.index('projX_at_rightend_x')] = np.zeros_like( X_out[iev,hits_stg,sig_keys.index('projX_at_rightend_x')] )
+        X_out[iev,hits_stg,sig_keys.index('time')] =                np.zeros_like( X_out[iev,hits_stg,sig_keys.index('time')] )
  
     print('Output data matrix shape:', X_out.shape)
     return X_out
