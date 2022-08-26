@@ -116,10 +116,6 @@ def training_prep(X, sig_keys):
         X_out[iev,valid_hits,:-1] = np.copy(ev[valid_hits,:])
         X_out[iev,valid_hits, -1] = np.ones_like(X_out[iev,valid_hits, -1])
         
-        # delta_z_valid_hits = X_out[iev,valid_hits,sig_keys.index('z')].max() - X_out[iev,valid_hits,sig_keys.index('z')].min()
-        
-        # if delta_z_valid_hits < 1e-5:
-            # delta_z_valid_hits = X_out[iev,valid_hits,sig_keys.index('z')].max()
             
         for sk in sig_keys:
             if 'is_signal' in sk: continue
@@ -127,13 +123,7 @@ def training_prep(X, sig_keys):
                 X_out[iev, valid_hits,sig_keys.index(sk)] = np.floor( X_out[iev, valid_hits,sig_keys.index(sk)]*(4/100) )/4.
             else:
                 X_out[iev, valid_hits,sig_keys.index(sk)] = X_out[iev, valid_hits,sig_keys.index(sk)]/maxs[sk]
-            
-        # X_out[iev,valid_hits,sig_keys.index('z')] = ( X_out[iev,valid_hits,sig_keys.index('z')] - X_out[iev,valid_hits,sig_keys.index('z')].min())/delta_z_valid_hits
-        
-        # X_out[iev,valid_hits,sig_keys.index('time')] = np.ceil( X_out[iev,valid_hits,sig_keys.index('time')] )
-        
-        # X_out[iev,valid_hits,sig_keys.index('ptilt')] = X_out[iev,valid_hits,sig_keys.index('ptilt')]/0.02618
-        
+             
         ## sTGC events formating
         
         valid_hits_stg = (hit_types > -90)*(ev[:,sig_keys.index('ptype')] == 2)
@@ -150,7 +140,14 @@ def training_prep(X, sig_keys):
 def detector_matrix(X, sig_keys, detcard):
     print('~~ Preparing detector-based data matrix ~~')
     print('Using detector card:', detcard)
-    
+
+    maxs = {}
+
+    for sk in sig_keys:
+        if 'is_signal' in sk: continue
+        tmax = np.max(X[:,:,sig_keys.index(sk)])
+        maxs[sk] = tmax if tmax > 0 else 1
+
     specs = 0
     with open(detcard) as f:
         # fyml = yaml.load(f, Loader=yaml.FullLoader) ## only works on yaml > 5.1
@@ -189,18 +186,27 @@ def detector_matrix(X, sig_keys, detcard):
 
             for ihit,hit in enumerate(X[iev][allhit:]):
                 if hit[sig_keys.index('z')]==pz:
-                    X_out[iev,ipz,:-1] = hit
+                    X_out[iev,ipz,:-1] = np.copy(hit)
                     X_out[iev,ipz,-1] = 1
-                    X_out[iev,ipz,sig_keys.index('time')]/t_width_planes[ipz]
                     allhit+=1
                     break
-                    
-            
-    max_dz = max(z_hit_planes) - min(z_hit_planes)
-    avg_dz = 0.5*(max(z_hit_planes) + min(z_hit_planes))
-    
-    X_out[:,:,sig_keys.index('z')] = (X_out[:,:,sig_keys.index('z')] - avg_dz)/(0.5*max_dz)
-    X_out[:,:,sig_keys.index('ptilt')] = (X_out[:,:,sig_keys.index('z')] - avg_dz)/(0.5*max_dz)
-    
+
+        hit_types = ev[:,sig_keys.index('is_muon')]
+        valid_hits = hit_types > -90
+
+        for sk in sig_keys:
+            if 'is_signal' in sk: continue
+            elif 'time' in sk:
+                X_out[iev,valid_hits,sig_keys.index('time')] = np.floor( X_out[iev, valid_hits,sig_keys.index(sk)]*(4/100) )/4.
+            elif 'z' in sk:
+                X_out[iev,valid_hits,sig_keys.index('z')]    = X_out[iev,valid_hits,sig_keys.index('z')]/np.max( z_hit_planes )
+
+        valid_hits_stg = (hit_types > -90)*(ev[:,sig_keys.index('ptype')] == 2)
+
+        if hit[sig_keys.index('ptype')] == 2 and hit[sig_keys.index('is_muon')] >-90:
+            X_out[iev,valid_hits_stg,sig_keys.index('projX_at_middle_x')] = np.copy( X_out[iev,valid_hits_stg,sig_keys.index('x')] )
+            X_out[iev,valid_hits_stg,sig_keys.index('projX_at_rightend_x')] = np.zeros_like( X_out[iev,valid_hits_stg,sig_keys.index('projX_at_rightend_x')] )
+            X_out[iev,valid_hits_stg,sig_keys.index('time')] = np.zeros_like( X_out[iev,valid_hits_stg,sig_keys.index('projX_at_rightend_x')] )
+ 
     print('Output data matrix shape:', X_out.shape)
     return X_out
