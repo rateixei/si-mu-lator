@@ -8,7 +8,7 @@ import datatools
 import mlmodels
 
 from sklearn.utils import shuffle
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler
 
 import trainingvariables
 
@@ -20,6 +20,8 @@ parser.add_argument('--conv-batchnorm', dest='convbnorm', default=False, action=
                     help='use batch norm layer')
 parser.add_argument('--dense-batchnorm', dest='densebnorm', default=False, action='store_true',
                     help='use batch norm layer')
+parser.add_argument('--input-batchnorm', dest='inputbnorm', default=False, action='store_true',
+                    help='use batch norm layer')
 parser.add_argument('--lambda', dest='ll', default=0, type=int,
                     help='Combined loss constant')
 parser.add_argument('--no-penx', dest='penx', default=True, action='store_false',
@@ -30,7 +32,7 @@ parser.add_argument('--pen-type', dest='pentype', default=0, type=int, choices=[
                     help='Penalty type: 0, 1 or 2')
 parser.add_argument('--bkg-pen', dest='bkgpen', default=False, action='store_true',
                     help='Add background specific penalty')
-parser.add_argument('--clayers', dest='clayers', default="64,3,1:64,3,1", type=str,
+parser.add_argument('--clayers', dest='clayers', default="64,3,1,0:64,3,1,0", type=str,
                     help='Convolution layers')
 parser.add_argument('--dlayers', dest='dlayers', default="20:10", type=str,
                     help='Dense layers')
@@ -42,8 +44,9 @@ parser.add_argument('--flatten', dest='flatten', default=False, action='store_tr
                     help='Flatten instead of pooling')
 parser.add_argument('--do-q', dest='qkeras', default=False, action='store_true',
                     help='Use qkeras')
-parser.add_argument('--residual', dest='residual', default=False, action='store_true',
-                    help='Use residual block')
+parser.add_argument('--l1reg', dest='l1reg', default=0, type=float)
+parser.add_argument('--detmat', dest='detmat', default='none', type=str)
+
 
 parser.add_argument('--test', dest='test', default=False, action='store_true',
                     help='Testing mode')
@@ -54,9 +57,9 @@ parser.add_argument('--q-ibits', dest='qibits', default=0, type=int, help='qKera
 args = parser.parse_args()
 
 mod_name = 'MyTCN_'
-mod_name += args.clayers + '_'
-mod_name += args.dlayers + '_'
-mod_name += f'CBNorm{args.convbnorm}_DBNorm{args.densebnorm}_'
+mod_name += 'CL'+args.clayers + '_'
+mod_name += 'DL'+args.dlayers + '_'
+mod_name += f'CBNorm{args.convbnorm}_DBNorm{args.densebnorm}_IBNorm{args.inputbnorm}_'
 mod_name += f'll{args.ll}_'
 mod_name += f'ptype{args.pentype}_'
 mod_name += f'penX{args.penx}_penA{args.pena}_'
@@ -68,8 +71,13 @@ elif args.flatten:
     mod_name += '_Flatten'
 else:
     mod_name += '_MaxPool'
-if args.residual:
-    mod_name += '_ResNet'
+if args.l1reg > 0:
+    mod_name += f'_L1R{args.l1reg:.4f}'
+if 'none' not in args.detmat:
+    mod_name += '_DetMat'
+    
+mod_name = mod_name.replace(',', '.')
+mod_name = mod_name.replace(':', '..')
 
 import listredo
 
@@ -97,7 +105,10 @@ print('Y_hit shape:', Y_hit.shape)
 print('N signal:', (Y_mu == 1).sum())
 print('N background:', (Y_mu == 0).sum())
 
-X_prep = datatools.training_prep(dmat, sig_keys)    
+if 'none' in args.detmat:
+    X_prep = datatools.training_prep(dmat, sig_keys)    
+else:
+    X_prep = datatools.detector_matrix(dmat, sig_keys, detcard=args.detmat)    
 
 vars_of_interest = np.zeros(X_prep.shape[2], dtype=bool)
 training_vars = trainingvariables.tvars
@@ -105,7 +116,9 @@ for tv in training_vars:
     vars_of_interest[sig_keys.index(tv)] = 1
 X = X_prep[:,:,vars_of_interest]
 
-conv_layers = [ ( int(cl.split(',')[0]), int(cl.split(',')[1]), int(cl.split(',')[2]) ) for cl in args.clayers.split(':')]
+conv_layers = [ ( int(cl.split(',')[0]), int(cl.split(',')[1]), int(cl.split(',')[2]), int(cl.split(',')[3]) ) for cl in args.clayers.split(':')]
+print(conv_layers)
+
 if 'none' in args.dlayers:
     dense_layers = []
 else:
@@ -122,13 +135,14 @@ my_model = mlmodels.model_tcn_muon(input_shape=(X.shape[1],X.shape[2]),
         F_layers=dense_layers, 
         batchnorm_dense=args.densebnorm, 
         batchnorm_conv=args.convbnorm,
+        batchnorm_inputs=args.inputbnorm,
         do_reg_out=2,
+        l1_reg=args.l1reg, l2_reg=0,
         ll=args.ll,
         pen_type=args.pentype, 
         pen_x=args.penx, pen_a=args.pena, 
         bkg_pen_x=args.bkgpen, bkg_pen_a=args.bkgpen,
-        reg_bias=args.regbias, pooling=pooling,
-        residual=args.residual)
+        reg_bias=args.regbias, pooling=pooling)
 
 print("~~ This is a combined classification+regression task ~~")
 mult_fact_X = max(data['ev_mu_x'])
@@ -144,9 +158,18 @@ Y_train[:,0] = Y_clas_train
 Y_train[:,1] = Y_xreg_train
 Y_train[:,2] = Y_areg_train
 
+def lrschedule(epoch, lr):
+   if epoch < 2000:
+       lr = 10.0e-2
+   else:
+       lr = 5.0e-2
+   return lr
+
+lr_callback = LearningRateScheduler(lrschedule)
+
 if args.qkeras:
     
-    mod_name = f'QKeras_{args.qbits}_{args.qibits}_' + mod_name
+    mod_name = f'QKeras.b{args.qbits}_QKeras.i{args.qibits}_' + mod_name
     
     q_dict = {
         "QActivation": {
@@ -188,9 +211,9 @@ if args.qkeras:
         
     history = q_model.fit( X_train, Y_train,
                             callbacks = [
-                                    EarlyStopping(monitor='val_loss', patience=500, verbose=1),
+                                    EarlyStopping(monitor='val_loss', patience=5000, verbose=1), lr_callback,
                                     ModelCheckpoint(f'models/{mod_name}/weights.h5', monitor='val_loss', verbose=True, save_best_only=True) ],
-                            epochs=3000,
+                            epochs=5000,
                             validation_split = 0.25,
                             batch_size=2**14,
                             #batch_size=1000000,
@@ -211,9 +234,9 @@ else:
     #history = my_model.fit( X_train, [ Y_clas_train,  Y_train],
     history = my_model.fit( X_train, Y_train,
                             callbacks = [
-                                    EarlyStopping(monitor='val_loss', patience=500, verbose=1),
+                                    EarlyStopping(monitor='val_loss', patience=1000, verbose=1), lr_callback,
                                     ModelCheckpoint(f'models/{mod_name}/weights.h5', monitor='val_loss', verbose=True, save_best_only=True) ],
-                            epochs=3000,
+                            epochs=5000,
                             validation_split = 0.25,
                             batch_size=2**14,
                             #batch_size=1000000,

@@ -170,6 +170,9 @@ if args.new_table:
 
 proj_loc = out_loc_name + f'/{hls_model_name}/myproject_prj/'
 
+# fpgapart = 'xcu250-figd2104-2L-e'
+fpgapart = 'xcvu13p-fsga2577-2-e'
+
 if 'tcn' in mod_name or 'TCN' in mod_name:
     print('~~~ TCN is in the name, so will assume it is a CNN ~~~')
     cfg = hls4ml.converters.create_config(backend='Vivado')
@@ -177,10 +180,10 @@ if 'tcn' in mod_name or 'TCN' in mod_name:
     cfg['HLSConfig']  = config
     cfg['KerasModel'] = model
     cfg['OutputDir']  = proj_loc
-    cfg['XilinxPart'] = 'xcu250-figd2104-2L-e'
+    cfg['XilinxPart'] = fpgapart
     hls_model = hls4ml.converters.keras_to_hls(cfg)
 else:
-    hls_model = hls4ml.converters.convert_from_keras_model(model, part='xcu250-figd2104-2-e',
+    hls_model = hls4ml.converters.convert_from_keras_model(model, part=fpgapart,
                                                        hls_config=config,
                                                        output_dir=proj_loc)
 print("-----------------------------------")

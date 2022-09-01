@@ -17,13 +17,24 @@ def sigmoid(x):
 
 SIM="/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/"
 DATA_LOC=f"{SIM}/stgc/atlas_nsw_pad_z0_stgc20Max1_bkgr_1_CovAngle_TRAIN/*.h5"
+detmat="/sdf/home/r/rafaeltl/home/Muon/21062022/si-mu-lator/cards/atlas_nsw_pad_z0_stgc20Max1.yml"
 linearized = True
 
 files=glob(DATA_LOC)
 
 data, dmat, Y, Y_mu, Y_hit, sig_keys = datatools.make_data_matrix(files, max_files=500, sort_by='z')
 this_cut=(Y_mu==1)
+
+
 X_pad = datatools.training_prep(dmat, sig_keys)
+X_det = datatools.detector_matrix(dmat, sig_keys, detcard=detmat)
+
+assert X_pad.shape[2] == X_det.shape[2]
+
+vars_of_interest = np.zeros(X_pad.shape[2], dtype=bool)
+training_vars = trainingvariables.tvars
+for tv in training_vars:
+    vars_of_interest[sig_keys.index(tv)] = 1
 
 mdicts = []
 
@@ -41,7 +52,7 @@ for mloc in allmodels:
     #     continue
     if mloc+'/history.npy' not in glob(mloc+'/*'): 
         print("Training hasn't finished...")
-        # continue
+        continue
 
     if mloc+'/saved_model.pb' not in glob(mloc+'/*') and mloc+'/saved_model.pbtxt' not in glob(mloc+'/*'):
         print("Couldn't find saved model")
@@ -54,14 +65,42 @@ for mloc in allmodels:
     print(mloc)
     mdict = {}
     mdict['name'] = mloc
-
-    X_prep = X_pad
-            
-    vars_of_interest = np.zeros(X_prep.shape[2], dtype=bool)
-    training_vars = trainingvariables.tvars
-    for tv in training_vars:
-        vars_of_interest[sig_keys.index(tv)] = 1
+    mdict['clayers'] = ''
+    mdict['dlayers'] = ''
+    mdict['CBNorm'] = 'CBNormTrue' in mloc
+    mdict['DBNorm'] = 'DBNormTrue' in mloc
+    mdict['IBNorm'] = 'IBNormTrue' in mloc
+    mdict['LL'] = ''
+    mdict['ptype'] = ''
+    mdict['penX'] = 'penXTrue' in mloc
+    mdict['penA'] = 'penATrue' in mloc
+    mdict['bkgPen'] = 'bkgPenTrue' in mloc
+    mdict['regBias'] = 'regBiasTrue' in mloc
+    mdict['qkeras'] = 'QKeras' in mloc
+    mdict['qbits'] = 0
+    mdict['qibits'] = 0
+    mdict['pool'] = 0
+    mdict['l1reg'] = 0
+    mdict['detmat'] = 0
+    if '_AvgPool' in mloc: mdict['pool'] = 1
+    if '_Flatten' in mloc: mdict['pool'] = 2
     
+    confs = mloc.split('_')
+    for cc in confs:
+        if 'CL' in cc: mdict['clayers'] = cc
+        elif 'DL' in cc: mdict['dlayers'] = cc
+        elif 'll' in cc: mdict['LL'] = cc
+        elif 'ptype' in cc: mdict['ptype'] = cc
+        elif 'QKeras.b' in cc: mdict['qbits'] = cc
+        elif 'QKeras.i' in cc: mdict['qibits'] = cc
+        elif 'L1R' in cc: mdict['l1red'] = cc
+
+    if 'DetMat' in mloc:
+        X_prep = X_det
+        mdict['detmat'] = 1
+    else:
+        X_prep = X_pad
+             
     model_loc = '../models/'
     
     model = keras.models.load_model(mloc,compile=False)
@@ -81,32 +120,6 @@ for mloc in allmodels:
     a_reg = preds[:,2]*mult_facta
     
     mdict['npars'] = model.count_params()
-    mdict['qkeras'] = 0
-
-    confs = mloc.split('_')
-    
-    base_ind = 0
-    if 'QKeras' in mloc:
-        base_ind = 3
-        mdict['qkeras'] = 1
-        mdict['qbits'] = confs[1]
-        mdict['qibits'] = confs[2]
-
-    mdict['clayers'] = confs[base_ind+1]
-    mdict['dlayers'] = confs[base_ind+2]
-    mdict['CBNorm'] = 1.0 if 'True' in confs[base_ind+3] else 0.0
-    mdict['DBNorm'] = 1.0 if 'True' in confs[base_ind+4] else 0.0
-    mdict['LL'] = float(confs[base_ind+5].replace('ll', ''))
-    mdict['ptype'] = float(confs[base_ind+6].replace('ptype', ''))
-    mdict['penX'] = 1.0 if 'True' in confs[base_ind+7] else 0.0
-    mdict['penA'] = 1.0 if 'True' in confs[base_ind+8] else 0.0
-    mdict['bkgPen'] = 1.0 if 'True' in confs[base_ind+9] else 0.0
-    mdict['regBias'] = 1.0 if 'True' in confs[base_ind+10] else 0.0
-    mdict['res'] = 1.0 if 'ResNet' in mloc else 0.0
-    mdict['pool'] = 0
-    if '_AvgPool' in mloc: mdict['pool'] = 1
-    if '_Flatten' in mloc: mdict['pool'] = 2
-    
     mdict['mod_mae_x'] = metrics.mean_absolute_error( data['ev_mu_x'][this_cut], x_reg[this_cut] )
     mdict['mod_mae_a'] = metrics.mean_absolute_error( data['ev_mu_theta'][this_cut], a_reg[this_cut] )
 
