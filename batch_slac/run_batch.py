@@ -9,27 +9,23 @@ iseed=datetime.now().microsecond
 ## setup
 here_batch      = os.getcwd() + '/'
 here            = here_batch.replace('/batch_slac', '')
-#detcard_name    = "atlas_mm_road"
-#detcard_name    = "atlas_nsw_vmm"
-#detcard_name    = "atlas_nsw_pad_z0"
-#detcard_name    = "atlas_nsw_pad_z0_stgc20"
-#detcard_name    = "atlas_nsw_pad_z0_stgc20Max1"
-detcard_name    = "atlas_nsw_pad_z0_normalRate"
+#detcard_name    = "atlas_nsw_pad_z0" # for signal generation
+detcard_name    = "atlas_nsw_pad_z0_stgBkg20_stgMaxBkgHit1" # for background generation
 det_card        = here+"/cards/"+detcard_name+".yml"
 
 ## events and noise
-nevs            = 2000
+nevs            = 2500
 bkg_rate        = 1
 override_total_n_noise = -1 ## only accepted if not generating muon
 #det_noise_dict = " --minhitsdet stgc 5 "
 det_noise_dict = ""
 
 ## muon
-generate_muon   = True
+generate_muon   = False
 muon_x_range    = [-20.0,20.0]
-muon_a_range    = [-3*1e-3, 3*1e-3]
-do_cov_angle    = False
-#muon_a_range    = []
+# muon_a_range    = [-3*1e-3, 3*1e-3]
+do_cov_angle    = True
+muon_a_range    = []
 
 out_loc         = here_batch+f"/out_files/{detcard_name}_bkgr_{bkg_rate}"
 

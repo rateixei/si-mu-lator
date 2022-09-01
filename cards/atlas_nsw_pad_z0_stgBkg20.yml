@@ -27,7 +27,7 @@ detector:
   planes:
 
     plane_1:
-      z: 0.0
+      z: 0
       offset: 1.6  ## staggering by half strip pitch
       width_t: 25  ## 1 BC = 25 ns
       n_t_seg: 1
@@ -81,7 +81,7 @@ detector:
       type: mm
 
     plane_7:
-      z: 127.2
+      z: 125.2
       tilt: 0.02618 ## 1.5 degrees
       noise_rate: 70000
       n_x_seg: 128
@@ -97,7 +97,7 @@ detector:
       type: mm
 
     plane_9:
-      z: 178.0
+      z: 223.0
       tilt: 0.02618 ## 1.5 degrees
       noise_rate: 70000
       n_x_seg: 128
@@ -125,7 +125,7 @@ detector:
       type: mm
 
     plane_13:
-      z: 334.5
+      z: 334.0
       width_t: 25
       n_t_seg: 1
       n_x_seg: 14

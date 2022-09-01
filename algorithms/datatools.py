@@ -99,11 +99,14 @@ def training_prep(X, sig_keys):
         # return X
     
     maxs = {}
+    mins = {}
     
     for sk in sig_keys:
         if 'is_signal' in sk: continue
         tmax = np.max(X[:,:,sig_keys.index(sk)])
+        tmin = np.min(X[:,:,sig_keys.index(sk)])
         maxs[sk] = tmax if tmax > 0 else 1
+        mins[sk] = tmin
     
     for iev in tqdm(range( X.shape[0] )):
         ev = X[iev]
@@ -118,9 +121,12 @@ def training_prep(X, sig_keys):
         
             
         for sk in sig_keys:
-            if 'is_signal' in sk: continue
-            if 'time' in sk:
+            if 'is_signal' in sk: 
+                continue
+            elif 'time' in sk:
                 X_out[iev, valid_hits,sig_keys.index(sk)] = np.floor( X_out[iev, valid_hits,sig_keys.index(sk)]*(4/100) )/4.
+            elif 'z' in sk:
+                X_out[iev, valid_hits,sig_keys.index(sk)] = 2*X_out[iev, valid_hits,sig_keys.index(sk)]/maxs[sk] - 1.
             else:
                 X_out[iev, valid_hits,sig_keys.index(sk)] = X_out[iev, valid_hits,sig_keys.index(sk)]/maxs[sk]
              
@@ -142,11 +148,14 @@ def detector_matrix(X, sig_keys, detcard):
     print('Using detector card:', detcard)
 
     maxs = {}
-
+    mins = {}
+    
     for sk in sig_keys:
         if 'is_signal' in sk: continue
         tmax = np.max(X[:,:,sig_keys.index(sk)])
+        tmin = np.min(X[:,:,sig_keys.index(sk)])
         maxs[sk] = tmax if tmax > 0 else 1
+        mins[sk] = tmin
 
     specs = 0
     with open(detcard) as f:
@@ -198,9 +207,11 @@ def detector_matrix(X, sig_keys, detcard):
             elif 'time' in sk:
                 X_out[iev,:,sig_keys.index('time')] = np.floor( X_out[iev, :,sig_keys.index(sk)]*(4/100) )/4.
             elif 'z' in sk:
-                X_out[iev,:,sig_keys.index('z')]    = X_out[iev,:,sig_keys.index('z')]/np.max( z_hit_planes )
+                X_out[iev,:,sig_keys.index('z')]    = 2.*X_out[iev,:,sig_keys.index('z')]/np.max( z_hit_planes ) - 1
             else:
                 X_out[iev,:,sig_keys.index(sk)] = X_out[iev, :,sig_keys.index(sk)]/maxs[sk]
+                if mins[sk] > -0.5:
+                    X_out[iev,:,sig_keys.index(sk)] = 2*X_out[iev,:,sig_keys.index(sk)] - 1.
 
         hits_stg = (ev[:,sig_keys.index('ptype')] == 2)
 
