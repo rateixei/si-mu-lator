@@ -1,0 +1,9 @@
+toredo=[
+#"MyTCN_10,3,1:10,3,1_20_CBNormTrue_DBNormFalse_ll1_ptype0_penXFalse_penAFalse_bkgPenTrue_regBiasFalse",
+#"MyTCN_10,3,1:10,3,1_20_CBNormTrue_DBNormFalse_ll1_ptype1_penXTrue_penATrue_bkgPenTrue_regBiasTrue",
+#"MyTCN_10,3,1:10,3,1_20_CBNormTrue_DBNormFalse_ll1_ptype2_penXTrue_penATrue_bkgPenTrue_regBiasFalse",
+#"MyTCN_20,3,1:5,3,1_20_CBNormTrue_DBNormFalse_ll1_ptype1_penXTrue_penATrue_bkgPenTrue_regBiasTrue",
+#"MyTCN_20,1,1:20,3,1_25_CBNormTrue_DBNormFalse_ll1_ptype0_penXFalse_penAFalse_bkgPenTrue_regBiasFalse",
+#"MyTCN_20,1,1:20,3,1_25_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenTrue_regBiasFalse",
+#"MyTCN_10,3,1:10,3,1_25_CBNormTrue_DBNormFalse_ll1_ptype2_penXFalse_penAFalse_bkgPenTrue_regBiasTrue"
+]

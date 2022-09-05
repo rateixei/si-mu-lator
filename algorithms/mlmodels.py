@@ -1,7 +1,7 @@
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Layer, Masking, Input, Dense, concatenate, Add
-from tensorflow.keras.layers import ReLU, BatchNormalization, Attention
+from tensorflow.keras.layers import ReLU, BatchNormalization, Attention, ReLU
 from tensorflow.keras.layers import BatchNormalization, Embedding, Lambda, TimeDistributed
 from tensorflow.keras.layers import LSTM, GRU, Conv1D, GlobalMaxPooling1D, Flatten, GlobalAveragePooling1D
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -572,68 +572,71 @@ def model_tcn_muon(input_shape,
         F_layers=[20,10], 
         batchnorm_dense=False,
         batchnorm_conv=False, 
+        batchnorm_inputs=False,
         do_reg_out=0,
         l1_reg=0, l2_reg=0,
         ll=0,
         pen_type=0, pen_x=True, pen_a=True, bkg_pen_x=False, bkg_pen_a=False,
         reg_bias=True,
-        pooling='max',
-        residual=False):
+        pooling='max'):
 
     inputs = Input(shape=(input_shape[0], input_shape[1],), name="inputs")
     
     def residual_block(irblock, x, nfilters, ksize, strides):
         ishape=(x.shape[1], x.shape[2])
         
-        x = BatchNormalization()(x)
+        x = BatchNormalization(beta_constraint=max_norm(1.), gamma_constraint=max_norm(1.))(x)
         
         fx = Conv1D(nfilters, kernel_size=ksize, strides=strides,
                 kernel_initializer='variance_scaling', padding='same',
                 kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
+                kernel_constraint=max_norm(1.),
                 input_shape=ishape, name=f"RB_C1D_{irblock}"
                )(x)
 
-        fx = BatchNormalization()(fx)
+        fx = BatchNormalization(beta_constraint=max_norm(1.), gamma_constraint=max_norm(1.))(fx)
         
-        fx = tf.keras.activations.relu(fx, max_value=1.0)
+        fx = ReLU()(fx)
         
         fx = Conv1D(nfilters, kernel_size=ksize, strides=strides,
                     kernel_initializer='variance_scaling', padding='same',
                     kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
+                    kernel_constraint=max_norm(1.),
                     name=f"RB_C1D_{irblock}_1"
                     )(fx)
         
-        fx = BatchNormalization()(fx)
+        fx = BatchNormalization(beta_constraint=max_norm(1.), gamma_constraint=max_norm(1.))(fx)
         
         if nfilters > ishape[1]:
             dim_diff = nfilters - ishape[1] - 1
             x = tf.pad( x, tf.constant([ [0, 0], [0, 0], [  dim_diff  , 1] ] ))
+        elif nfilters < ishape[1]:
+            dim_diff = ishape[1] - nfilters - 1
+            fx = tf.pad( fx, tf.constant([ [0, 0], [0, 0], [  dim_diff  , 1] ] ))
             
         out = Add()([x,fx])
-        out = tf.keras.activations.relu(out, max_value=1.0)
+        fx = ReLU()(out)
         
         return out
     
+    if batchnorm_inputs: 
+        # conv = BatchNormalization(beta_constraint=max_norm(1.), gamma_constraint=max_norm(1.))(inputs)
+        conv = BatchNormalization()(inputs)
+    else:
+        conv = inputs      
 
     for ic1d,c1d in enumerate(convs_1ds):
-        if residual:
+        if c1d[3] == 0:
+            conv = Conv1D(filters=c1d[0], kernel_size=c1d[1], strides=c1d[2], 
+                              activation='relu', kernel_initializer='variance_scaling', kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
+                              kernel_constraint=max_norm(1.),
+                              input_shape=(inputs.shape[1], inputs.shape[2]), name=f"C1D_{ic1d}" )(inputs)
+        if c1d[3] == 1:
             conv = residual_block(irblock=ic1d, x=inputs, nfilters=c1d[0], ksize=c1d[1], strides=c1d[2])
-        else:
-            if ic1d == 0:
-                conv = Conv1D(filters=c1d[0], kernel_size=c1d[1], strides=c1d[2], 
-                              activation='relu', kernel_initializer='variance_scaling', kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
-                              kernel_constraint=max_norm(1.),
-                              input_shape=input_shape, name=f"C1D_{ic1d}" )(inputs)
 
-                # if batchnorm_conv: conv = BatchNormalization()(conv)
+        # if batchnorm_conv: conv = BatchNormalization(beta_constraint=max_norm(1.), gamma_constraint=max_norm(1.))(conv)
+        if batchnorm_conv: conv = BatchNormalization()(conv)
 
-            else:
-                conv = Conv1D(filters=c1d[0], kernel_size=c1d[1], strides=c1d[2], 
-                              activation='relu', kernel_initializer='variance_scaling', kernel_regularizer=tf.keras.regularizers.L1L2(l1=l1_reg, l2=l2_reg),
-                              kernel_constraint=max_norm(1.),
-                              name=f"C1D_{ic1d}" )(conv)
-
-                # if batchnorm_conv: conv = BatchNormalization()(conv)
 
     if 'max' in pooling:
         hidden = GlobalMaxPooling1D()(conv)
@@ -645,6 +648,7 @@ def model_tcn_muon(input_shape,
     for iF,F_l in enumerate(F_layers):
         hidden = Dense(F_l, activation='relu', kernel_initializer='variance_scaling', kernel_constraint=max_norm(1.), bias_constraint=max_norm(1.), name=f'F_dense_{iF}')(hidden)
 
+    # if batchnorm_dense: hidden = BatchNormalization(beta_constraint=max_norm(1.), gamma_constraint=max_norm(1.))(hidden)
     if batchnorm_dense: hidden = BatchNormalization()(hidden)
     
     if do_reg_out==0:
