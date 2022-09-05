@@ -158,14 +158,14 @@ Y_train[:,0] = Y_clas_train
 Y_train[:,1] = Y_xreg_train
 Y_train[:,2] = Y_areg_train
 
-def lrschedule(epoch, lr):
-   if epoch < 2000:
-       lr = 10.0e-2
-   else:
-       lr = 5.0e-2
-   return lr
+#def lrschedule(epoch, lr):
+#    if epoch < 2000:
+#       lr = 10.0e-2
+#    else:
+#       lr = 5.0e-2
+#    return lr
 
-lr_callback = LearningRateScheduler(lrschedule)
+#lr_callback = LearningRateScheduler(lrschedule)
 
 if args.qkeras:
     
@@ -211,7 +211,7 @@ if args.qkeras:
         
     history = q_model.fit( X_train, Y_train,
                             callbacks = [
-                                    EarlyStopping(monitor='val_loss', patience=5000, verbose=1), lr_callback,
+                                    EarlyStopping(monitor='val_loss', patience=5000, verbose=1), # lr_callback,
                                     ModelCheckpoint(f'models/{mod_name}/weights.h5', monitor='val_loss', verbose=True, save_best_only=True) ],
                             epochs=5000,
                             validation_split = 0.25,
@@ -234,7 +234,7 @@ else:
     #history = my_model.fit( X_train, [ Y_clas_train,  Y_train],
     history = my_model.fit( X_train, Y_train,
                             callbacks = [
-                                    EarlyStopping(monitor='val_loss', patience=1000, verbose=1), lr_callback,
+                                    EarlyStopping(monitor='val_loss', patience=1000, verbose=1), # lr_callback,
                                     ModelCheckpoint(f'models/{mod_name}/weights.h5', monitor='val_loss', verbose=True, save_best_only=True) ],
                             epochs=5000,
                             validation_split = 0.25,

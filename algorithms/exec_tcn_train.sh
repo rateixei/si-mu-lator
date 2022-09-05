@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SIM="/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/"
-DATA_LOC="${SIM}/stgc/atlas_nsw_pad_z0_stgc20Max1_bkgr_1_CovAngle_TRAIN/*.h5"
+SIM="/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/20220901/SIG_atlas_nsw_pad_z0_bkgr_1_BKG_stgBkg20_stgMaxBkgHit1/"
+DATA_LOC="${SIM}/TRAIN/*.h5"
 # SING_IMG=/sdf/group/ml/software/images/slac-ml/20211101.0/slac-ml@20211101.0.sif
 SING_IMG=/gpfs/slac/atlas/fs1/d/rafaeltl/public/sing/muon_qkeras.sif
 
@@ -64,8 +64,8 @@ L1REG=" "
 
 ijob=0
 
-DCARD=" "
-# DCARD=" --detmat /sdf/home/r/rafaeltl/home/Muon/21062022/si-mu-lator/cards/atlas_nsw_pad_z0_stgc20Max1.yml "
+# DCARD=" "
+DCARD=" --detmat ${SIM}/atlas_nsw_pad_z0.yml "
 
 for cbnorm in "${VALS_CBNORM[@]}"
 do

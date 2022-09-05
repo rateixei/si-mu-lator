@@ -15,9 +15,10 @@ from scipy.stats import skew, iqr
 def sigmoid(x):
     return 1/(1 + np.exp(-x))
 
-SIM="/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/"
-DATA_LOC=f"{SIM}/stgc/atlas_nsw_pad_z0_stgc20Max1_bkgr_1_CovAngle_TRAIN/*.h5"
-detmat="/sdf/home/r/rafaeltl/home/Muon/21062022/si-mu-lator/cards/atlas_nsw_pad_z0_stgc20Max1.yml"
+SIM="/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/20220901/SIG_atlas_nsw_pad_z0_bkgr_1_BKG_stgBkg20_stgMaxBkgHit1/"
+DATA_LOC=f"{SIM}/TEST/*.h5"
+
+detmat=f'{SIM}/atlas_nsw_pad_z0.yml'
 linearized = True
 
 files=glob(DATA_LOC)
@@ -38,7 +39,7 @@ for tv in training_vars:
 
 mdicts = []
 
-modloc = "models/MyTCN*"
+modloc = "sep5_models/MyTCN*"
 allmodels = glob(modloc)
 
 for mloc in allmodels:
@@ -52,7 +53,7 @@ for mloc in allmodels:
     #     continue
     if mloc+'/history.npy' not in glob(mloc+'/*'): 
         print("Training hasn't finished...")
-        continue
+        # continue
 
     if mloc+'/saved_model.pb' not in glob(mloc+'/*') and mloc+'/saved_model.pbtxt' not in glob(mloc+'/*'):
         print("Couldn't find saved model")
