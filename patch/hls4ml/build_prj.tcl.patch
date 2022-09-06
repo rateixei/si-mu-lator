@@ -1,0 +1,20 @@
+59c59
+< add_files -tb myproject_test.cpp -cflags "-std=c++0x"
+---
+> add_files -tb myproject_test.cpp -cflags "-std=c++0x" -csimflags "-I/usr/include/x86_64-linux-gnu"
+76c76
+<   csim_design
+---
+>   csim_design -ldflags "-B /usr/lib/x86_64-linux-gnu"
+92c92
+<   add_files -tb myproject_test.cpp -cflags "-std=c++0x -DRTL_SIM"
+---
+>   add_files -tb myproject_test.cpp -cflags "-std=c++0x -DRTL_SIM -I/usr/include/x86_64-linux-gnu"
+94c94
+<   cosim_design -trace_level all
+---
+>   cosim_design -trace_level all -ldflags "-B /usr/lib/x86_64-linux-gnu" -rtl vhdl
+116c116
+<   export_design -format ip_catalog
+---
+>   export_design -format ip_catalog -rtl vhdl

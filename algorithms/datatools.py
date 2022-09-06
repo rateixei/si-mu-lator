@@ -22,7 +22,10 @@ def make_data_matrix(all_files, max_files=50, masking99 = False, sort_by='none')
             continue
         
         if ifile == 0:
-            sig_keys = [ vv.decode("utf-8") for vv in np.array(this_file['signal_keys']) ]
+            sig_keys = [ vv for vv in np.array(this_file['signal_keys']) ]
+            if type(sig_keys[0]) is bytes:
+                for i in range(len(sig_keys)):
+                    sig_keys[i] = sig_keys[i].decode("utf-8", "ignore")
             
     
         signals.append( np.array( this_file['signals'] ) )

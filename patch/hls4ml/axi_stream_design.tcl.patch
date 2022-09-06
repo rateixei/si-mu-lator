@@ -1,0 +1,12 @@
+4c4
+< 
+---
+> set target_lang "vhdl"
+6c6
+< 
+---
+> set_property target_language $target_lang [current_project]
+50c50
+< add_files -norecurse ./${myproject}_vivado_accelerator/project_1.srcs/sources_1/bd/design_1/hdl/design_1_wrapper.v
+---
+> add_files -norecurse ./${myproject}_vivado_accelerator/project_1.srcs/sources_1/bd/design_1/hdl/design_1_wrapper.vhd

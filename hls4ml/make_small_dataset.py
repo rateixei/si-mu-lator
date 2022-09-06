@@ -10,8 +10,17 @@ import trainingvariables
 from glob import glob
 from sklearn.utils import shuffle
 
-files_loc = "/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/stgc/"
-# fdir = "atlas_mm_vmm_bkgr_1_TEST"
+import subprocess
+result = subprocess.run(['hostname', '-d'], stdout=subprocess.PIPE)
+domain = result.stdout.decode('utf-8').split('\n')[0]
+if 'slac' in domain:
+    files_loc = "/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/stgc/"
+elif 'cern' in domain:
+    files_loc = "/Data/ML/si-mu-lator/simulation_data/"
+else:
+    print ("#ERROR: not a recognized environment, doing nothing")
+    exit(0)
+    # fdir = "atlas_mm_vmm_bkgr_1_TEST"
 fdir = "atlas_nsw_pad_z0_stgc20Max1_bkgr_1_CovAngle_TRAIN"
 nevs=100000
 do_det_matrix=False
