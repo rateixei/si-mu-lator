@@ -52,7 +52,10 @@ parser.add_argument('-r', '--reuse', dest='reuse', type=int, default=1,
 parser.add_argument('--strategy', dest='strat', default='Latency', 
                     help='Strategy')
 parser.add_argument('--vivado', dest='viv', action='store_true', default=False,
-                    help='Do vivado things')
+                    help='Build HLS model include export ip, if already was build, no need to do it again')
+parser.add_argument('-t', '--template', dest='template', action='store_true', default=False,
+                    help='Make vivado template using the exported ip')
+
 parser.add_argument('--lut', dest='new_table', action='store_true', default=False, 
                     help='Change LUT precision')
 parser.add_argument('--static', dest='static', type=int, default=1, 
@@ -170,22 +173,39 @@ if args.new_table:
 
 proj_loc = out_loc_name + f'/{hls_model_name}/myproject_prj/'
 
-# fpgapart = 'xcu250-figd2104-2L-e'
-fpgapart = 'xcvu13p-fsga2577-2-e'
-
 if 'tcn' in mod_name or 'TCN' in mod_name:
     print('~~~ TCN is in the name, so will assume it is a CNN ~~~')
-    cfg = hls4ml.converters.create_config(backend='Vivado')
-    cfg['IOType']     = 'io_stream' # Must set this if using CNNs!
+    cfg = hls4ml.converters.create_config(backend='VivadoAccelerator')
+    cfg['IOType']     = 'io_stream' # Must set this if using CNNs!                                                                                                               
     cfg['HLSConfig']  = config
     cfg['KerasModel'] = model
     cfg['OutputDir']  = proj_loc
-    cfg['XilinxPart'] = fpgapart
+    cfg['ClockPeriod']= 5
+    cfg['XilinxPart'] = 'xczu9eg-ffvb1156-2-e'
+    cfg['Board']      = 'zcu102'
+    cfg['ProjectName'] = 'myproject'
+    cfg['InputData']  = args.data.split(',')[0]
+    if os.path.exists(args.data.split(',')[1].replace('.npy','_hls.npy')):
+        print ("using HLS predicted value")
+        print("-----------------------------------")
+        cfg['OutputPredictions'] = args.data.split(',')[1].replace('.npy','_hls.npy')
+    else :
+        print ("using Keras predicted values, run again to load HLS predicted values")
+        print("-----------------------------------")
+        cfg['OutputPredictions'] = args.data.split(',')[1]
+    print(cfg)
     hls_model = hls4ml.converters.keras_to_hls(cfg)
 else:
-    hls_model = hls4ml.converters.convert_from_keras_model(model, part=fpgapart,
+    print("-----------------------------------")
+    print("CAREFUL!!! this code has been optimized for TCN only")
+    hls_model = hls4ml.converters.convert_from_keras_model(model, part='xczu9eg-ffvb1156-2-e',
                                                        hls_config=config,
-                                                       output_dir=proj_loc)
+                                                       backend='VivadoAccelerator',
+#                                                       backend='Vivado',                                                                                                        
+                                                       board='zcu102',
+                                                       output_dir=f'{out_loc_name}/hls4ml_prj_zcu102')
+
+
 print("-----------------------------------")
 
 print("\n-----------------------------------")
@@ -225,8 +245,18 @@ if args.viv:
     print("\n-----------------------------------")
     print('Loading Vivado 2019.2')
     import os
-    os.environ['PATH'] = '/gpfs/slac/atlas/fs1/d/rafaeltl/public/Xilinx/Vivado/2019.2/bin:' + os.environ['PATH']
-    os.environ['LM_LICENSE_FILE'] = '2100@rdlic1:2100@rdlic2:2100@rdlic3'
+    import subprocess
+    result = subprocess.run(['hostname', '-d'], stdout=subprocess.PIPE)
+    domain = result.stdout.decode('utf-8').split('\n')[0]
+    if 'slac' in domain:    
+        os.environ['PATH'] = '/gpfs/slac/atlas/fs1/d/rafaeltl/public/Xilinx/Vivado/2019.2/bin:' + os.environ['PATH']
+        os.environ['LM_LICENSE_FILE'] = '2100@rdlic1:2100@rdlic2:2100@rdlic3'
+    elif 'cern' in domain:
+        os.environ['PATH'] = '/opt/Xilinx/Vivado/Vivado/2019.2/bin/:' + os.environ['PATH']
+        os.environ['LM_LICENSE_FILE'] = '2112@licenxilinx:2100@rdlic1:2100@rdlic2:2100@rdlic3'
+    else:
+        print("#WARNING: No idea where vivado is in this machine")
+        exit(0)
     hls_model.build(csim=False, vsynth=True)
     from contextlib import redirect_stdout
     with open(out_loc_name+f'/reports/{hls_model_name}.txt', 'w') as f:
@@ -241,5 +271,12 @@ if args.viv:
         f.write( f"HLS_MSE_X {hls_msex}\n" )
         f.write( f"HLS_MSE_A {hls_msea}\n" )
         f.write( "\n" )
+    if args.template:
+        print("\n-----------------------------------")
+        print('Writing template for testing')
+        print('Functionality not implemented, sorry')
+        print(f"Available boards: {hls4ml.templates.get_supported_boards_dict().keys()}")
+        print(hls4ml.templates.get_backend('VivadoAccelerator').create_initial_config('zcu102'))
+        #hls4ml.templates.VivadoAcceleratorBackend.make_bitfile(hls_model)                                                                                                         
     print('Done Vivado 2019.2', out_loc_name+f'/reports/{hls_model_name}.txt')
     print("-----------------------------------")
