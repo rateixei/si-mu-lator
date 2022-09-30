@@ -102,15 +102,10 @@ else:
 
 print('--------- Keras testing')
 y_test_keras = model.predict(x_test, batch_size=2**10)
-#print(len(y_test_keras), y_test_keras[0].shape, y_test_keras[1].shape)
-print(y_test_keras)
 #sys.exit()
-y_c_keras = sigmoid(y_test_keras[:,0]) if linearized else y_test_keras[:,0]
-keras_auc = roc_auc_score(y_test[:,0], y_c_keras)
-keras_msex = mean_squared_error(y_test[:,1][y_test[:,0]==1], y_test_keras[:,1][y_test[:,0]==1])
-keras_msea = mean_squared_error(y_test[:,2][y_test[:,0]==1], y_test_keras[:,2][y_test[:,0]==1])
+keras_msex = mean_squared_error(y_test[:,0], y_test_keras[:,0])
+keras_msea = mean_squared_error(y_test[:,1], y_test_keras[:,2])
 
-print(f"Keras-Accuracy: {keras_auc}")
 print(f"Keras-MSE-X: {keras_msex}")
 print(f"Keras-MSE-A: {keras_msea}")
 
@@ -203,12 +198,12 @@ print("predicting...")
 y_test_hls = hls_model.predict(x_test_cont)
 print(y_test_hls)
 #sys.exit()
-y_c_hls = sigmoid(y_test_hls[:,0]) if linearized else y_test_hls[:,0]
-hls_auc = roc_auc_score(y_test[:,0], y_c_hls)
-hls_msex = mean_squared_error(y_test[:,1][y_test[:,0]==1], y_test_hls[:,1][y_test[:,0]==1])
-hls_msea = mean_squared_error(y_test[:,2][y_test[:,0]==1], y_test_hls[:,2][y_test[:,0]==1])
+hls_msex = mean_squared_error(y_test[:,0], y_test_hls[:,0])
+hls_msea = mean_squared_error(y_test[:,1], y_test_hls[:,2])
 
-print(f"HLS-Accuracy: {hls_auc}")
+keras_hls_msex = mean_squared_error( y_test_keras[:,0] , y_test_hls[:,0] )
+keras_hls_msea = mean_squared_error( y_test_keras[:,2] , y_test_hls[:,2] )
+
 print(f"HLS-MSE-X: {hls_msex}")
 print(f"HLS-MSE-A: {hls_msea}")
 
@@ -233,13 +228,16 @@ if args.viv:
         with redirect_stdout(f):
             hls4ml.report.read_vivado_report(proj_loc)
     with open(out_loc_name+f'/reports/{hls_model_name}.txt', 'a') as f:
-        f.write( f"KERAS_AUC {keras_auc}\n")
+        f.write( f"KERAS_AUC 0 \n")
         f.write( f"KERAS_MSE_X {keras_msex}\n")
         f.write( f"KERAS_MSE_A {keras_msea}\n")
         f.write( "\n" )
-        f.write( f"HLS_AUC {hls_auc}\n" )
+        f.write( f"HLS_AUC 0 \n" )
         f.write( f"HLS_MSE_X {hls_msex}\n" )
         f.write( f"HLS_MSE_A {hls_msea}\n" )
+        f.write( "\n" )
+        f.write( f"KERAS_HLS_MSE_X {keras_hls_msex}\n" )
+        f.write( f"KERAS_HLS_MSE_A {keras_hls_msea}\n" )
         f.write( "\n" )
     print('Done Vivado 2019.2', out_loc_name+f'/reports/{hls_model_name}.txt')
     print("-----------------------------------")

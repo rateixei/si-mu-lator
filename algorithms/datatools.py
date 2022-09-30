@@ -65,6 +65,7 @@ def make_data_matrix(all_files, max_files=50, masking99 = False, sort_by='none')
     Y[:,1:] = Y_hit[:]
     
     print('~~ Calculating occupancy information... ~~')
+    data['ev_n_noise'] = data['ev_n_signals'] - data['ev_n_mu_signals']
     data['n_sig_mmx']  = np.zeros(tot_evts)
     data['n_sig_mmu']  = np.zeros(tot_evts)
     data['n_sig_mmv']  = np.zeros(tot_evts)
@@ -225,12 +226,13 @@ def detector_matrix(X, sig_keys, detcard):
         #ptypetilt
         X_out[iev,:, sig_keys.index('ptypetilt')] = np.copy(X_out[iev,:, sig_keys.index('ptilt')]) + 3
                     
-        hits_stg = (ev[:,sig_keys.index('ptype')] == 2)
+        ## stgc
+        hits_stg = (X_out[iev,:,sig_keys.index('ptype')] == 1)
 
         X_out[iev,hits_stg,sig_keys.index('projX_at_middle_x')]   = np.copy(       X_out[iev,hits_stg,sig_keys.index('x')] )
         X_out[iev,hits_stg,sig_keys.index('projX_at_rightend_x')] = np.zeros_like( X_out[iev,hits_stg,sig_keys.index('projX_at_rightend_x')] )
         X_out[iev,hits_stg,sig_keys.index('time')]                = np.zeros_like( X_out[iev,hits_stg,sig_keys.index('time')] )
-        X_out[iev,hits_stg, sig_keys.index('ptypetilt')]          = np.zeros_like( X_out[iev,hits_stg,sig_keys.index('ptilt')] )
+        X_out[iev,hits_stg,sig_keys.index('ptypetilt')]           = np.zeros_like( X_out[iev,hits_stg,sig_keys.index('ptilt')] )
         
         X_out[iev,:,sig_keys.index('ptypetilt')] = X_out[iev,:,sig_keys.index('ptypetilt')]/4.0
  

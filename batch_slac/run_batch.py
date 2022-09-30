@@ -2,15 +2,15 @@ import os
 import sys
 from datetime import datetime
 
-njobs=200
+njobs=400
 #njobs=1
 iseed=datetime.now().microsecond
 
 ## setup
 here_batch      = os.getcwd() + '/'
 here            = here_batch.replace('/batch_slac', '')
-#detcard_name    = "atlas_nsw_pad_z0" # for signal generation
-detcard_name    = "atlas_nsw_pad_z0_stgBkg20_stgMaxBkgHit1" # for background generation
+detcard_name    = "atlas_nsw_pad_z0" # for signal and physical background generation
+# detcard_name    = "atlas_nsw_pad_z0_stgBkg20_stgMaxBkgHit1" # for scaled background generation
 det_card        = here+"/cards/"+detcard_name+".yml"
 
 ## events and noise
@@ -26,6 +26,7 @@ muon_x_range    = [-20.0,20.0]
 # muon_a_range    = [-3*1e-3, 3*1e-3]
 do_cov_angle    = True
 muon_a_range    = []
+muon_y_range    = [-20.0,20.0]
 
 out_loc         = here_batch+f"/out_files/{detcard_name}_bkgr_{bkg_rate}"
 
@@ -54,6 +55,9 @@ if generate_muon:
     base_name = 'WithMuon.' + base_name
     if len(muon_x_range) > 0: 
         base_name += f'.mux.{muon_x_range[0]}.{muon_x_range[1]}'
+    if len(muon_y_range) > 0:
+        base_name += f'.muy.{muon_y_range[0]}.{muon_y_range[1]}'
+   
     if do_cov_angle:
         base_name += '.CoverageAngle'
     else:
@@ -73,6 +77,8 @@ if generate_muon:
     options += "-m "
     if len(muon_x_range) > 0: 
         options += f"-x {muon_x_range[0]} {muon_x_range[1]} "
+    if len(muon_y_range) > 0:
+        options += f'-y {muon_y_range[0]} {muon_y_range[1]} '
     if do_cov_angle:
         options += " --coverage-angle "
     else:
@@ -104,6 +110,5 @@ for ir in range(iseed, iseed+njobs):
     print(batch_exec)
     # break
     os.system(batch_exec)
-    # break
 
 

@@ -10,16 +10,15 @@ import trainingvariables
 from glob import glob
 from sklearn.utils import shuffle
 
-files_loc = "/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/stgc/"
-# fdir = "atlas_mm_vmm_bkgr_1_TEST"
-fdir = "atlas_nsw_pad_z0_stgc20Max1_bkgr_1_CovAngle_TRAIN"
-nevs=100000
-do_det_matrix=False
-det_card="../cards/atlas_mm_vmm.yml"
+files_loc = "/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/simulation/20220912/"
+fdir = "SIG_atlas_nsw_pad_z0_xya"
+nevs=50000
+do_det_matrix=True
+det_card=files_loc+fdir+'/atlas_nsw_pad_z0.yml'
 
-all_files = glob(files_loc+fdir+'/*.h5')
+all_files = glob(files_loc+fdir+'/TEST/*.h5')
 
-data, dmat, Y, Y_mu, Y_hit, sig_keys = datatools.make_data_matrix(all_files, max_files=500, sort_by='z')
+data, dmat, Y, Y_mu, Y_hit, sig_keys = datatools.make_data_matrix(all_files, max_files=1000, sort_by='z')
 
 if do_det_matrix:
     X_prep = datatools.detector_matrix(dmat, sig_keys, det_card)
@@ -40,12 +39,11 @@ data_ev_mu_a = (data['ev_mu_theta'])/mult_fact_a
 
 X_test, Y_clas_test, Y_xreg_test, Y_areg_test = shuffle(X, Y_mu, data_ev_mu_x, data_ev_mu_a)
 
-Y_test = np.zeros( (Y_clas_test.shape[0], 3 ) )
-Y_test[:,0] = Y_clas_test
-Y_test[:,1] = Y_xreg_test
-Y_test[:,2] = Y_areg_test
+Y_test = np.zeros( (Y_clas_test.shape[0], 2 ) )
+Y_test[:,0] = Y_xreg_test
+Y_test[:,1] = Y_areg_test
 
-out_name_tag = f"test_{nevs}_padMat_noSig_{fdir}.npy"
+out_name_tag = f"test_{nevs}_padMat_{fdir}.npy"
 if do_det_matrix:
     det_card_name = det_card.split('/')[-1].replace('.yml', '')
     out_name_tag = f"test_{nevs}_detMat_{det_card_name}.npy"

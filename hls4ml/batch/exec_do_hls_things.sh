@@ -7,7 +7,7 @@ SING_IMG=/gpfs/slac/atlas/fs1/d/rafaeltl/public/sing/${IMG_NAME_TCN}
 
 fra_width=( 2 4 6 8 10 12 14 16 18 20 )
 int_width=( 0 1 2 3 4 6 )
-r_factor=( 1 2 5 10 )
+r_factor=( 1 2 5 10 50 )
 
 stat=1 #default==1
 strat=( "Resource" "Latency"  )
@@ -18,42 +18,18 @@ strat=( "Resource" "Latency"  )
 # int_width=( 6 )
 # r_factor=( 1 )
 
-MOD_LOC=/gpfs/slac/atlas/fs1/u/rafaeltl/Muon/21062022/si-mu-lator/algorithms/models_sparse/
+MOD_LOC=/gpfs/slac/atlas/fs1/u/rafaeltl/Muon/21062022/si-mu-lator/algorithms/models/
 
-# MOD=tcn_BatchNormFalse_MaskingFalse_06072022_05.50.29_normalMatrix
-# MOD=tcn_BatchNormFalse_MaskingFalse_08072022_02.28.45_normalMatrix #variance scaling
-# MOD=lstm_BatchNormFalse_MaskingFalse_05072022_08.14.31_detMatrix
-# MOD=lstm_BatchNormFalse_MaskingFalse_12072022_01.55.48_normalMatrix
-# MOD=lstm_BatchNormFalse_MaskingFalse_13072022_03.25.21_normalMatrix
-# MOD="MyTCN_20,1,1:20,3,1_25_CBNormTrue_DBNormFalse_ll1_ptype0_penXFalse_penAFalse_bkgPenTrue_regBiasFalse"
-# MOD="MyTCN_5,1,1:10,3,1_5_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue"
-# MOD="MyTCN_20,1,1:20,3,1_25_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenTrue_regBiasFalse"
-# MOD="MyTCN_5,1,1:10,3,1_5_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue"
-# MOD="MyTCN_5,1,1:10,3,1_5_CBNormFalse_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue"
-# MOD="MyTCN_5,1,1:10,3,1_5_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue"
-# MOD="MyTCN_20,1,1:20,3,1_10_CBNormTrue_DBNormFalse_ll1_ptype2_penXTrue_penATrue_bkgPenTrue_regBiasTrue"
-# MOD="MyTCN_10,3,1:10,3,1_30_CBNormTrue_DBNormFalse_ll1_ptype2_penXTrue_penATrue_bkgPenTrue_regBiasTrue_AvgPool"
-# MOD="MyTCN_20,3,1:5,3,1_20_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenTrue_regBiasFalse_Flatten"
-# MOD="MyTCN_10,3,1:10,3,1_30_CBNormTrue_DBNormFalse_ll1_ptype2_penXTrue_penATrue_bkgPenTrue_regBiasTrue_AvgPool"
-# MOD="MyTCN_20,3,1:20,3,1_40_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenTrue_regBiasTrue_Flatten"
-# MOD="QKeras_10_4_MyTCN_30,3,1_30_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue_AvgPool_ResNet"
-# MOD="MyTCN_30,3,1:40,3,1_100:50_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue_Flatten"
-# MOD="MyTCN_5,3,1:5,3,1_50:50_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue_Flatten"
-# MOD="MyTCN_10,5,1_none_CBNormTrue_DBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue_Flatten"
-# MOD="MyTCN_CL7.1.1.0..10.3.1.0_DL10..50_CBNormTrue_DBNormFalse_IBNormFalse_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue_Flatten"
-# MOD="MyTCN_CL10.5.1.0_DLnone_CBNormTrue_DBNormFalse_IBNormTrue_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue_Flatten"
-# MOD="MyTCN_CL5.3.1.0..5.3.1.0_DLnone_CBNormTrue_DBNormFalse_IBNormTrue_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue_Flatten"
-# MOD="MyTCN_CL5.3.1.0..5.3.1.0_DLnone_CBNormTrue_DBNormFalse_IBNormTrue_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue_Flatten_0.5"
-#MOD="MyTCN_CL5.3.1.0..5.3.1.0_DLnone_CBNormTrue_DBNormFalse_IBNormTrue_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue_Flatten_HAND1_6"
-MOD="MyTCN_CL5.3.1.0..5.3.1.0_DLnone_CBNormTrue_DBNormFalse_IBNormTrue_ll1_ptype0_penXTrue_penATrue_bkgPenFalse_regBiasTrue_Flatten_HAND0_8"
+# MOD="MyTCN_CL5.3.1.0..5.3.3.0_DLnone_CBNormTrue_DBNormFalse_IBNormFalse_penTrue_ptype0_regBiasTrue_lrate0.001_Flatten_DetMat_4Outputs"
+# MOD="MyTCN_CL20.4.1.0_DL20_CBNormTrue_DBNormFalse_IBNormFalse_penTrue_ptype0_regBiasTrue_lrate0.001_Flatten_DetMat_4Outputs"
+# MOD="MyTCN_CL7.4.4.0..5.3.1.0_DLnone_CBNormFalse_DBNormFalse_IBNormFalse_penTrue_ptype0_regBiasTrue_lrate0.001_Flatten_DetMat_4Outputs"
+# MOD="MyTCN_CL4.3.1.0..4.3.3.0_DLnone_CBNormFalse_DBNormFalse_IBNormFalse_penTrue_ptype0_regBiasTrue_lrate0.001_Flatten_DetMat_4Outputs"
+MOD="MyTCN_CL7.3.1.0..5.3.1.0_DLnone_CBNormFalse_DBNormFalse_IBNormFalse_penTrue_ptype0_regBiasTrue_lrate0.001_Flatten_DetMat_4Outputs"
 
 echo "HERE"
 
 DATALOC=/gpfs/slac/atlas/fs1/u/rafaeltl/Muon/21062022/si-mu-lator/hls4ml/
-#DATA="${DATALOC}/X_test_10000_padMat.npy,${DATALOC}/Y_test_10000_padMat.npy"
-DATA="${DATALOC}/X_test_100000_padMat_noSig_atlas_nsw_pad_z0_stgc20Max1_bkgr_1_CovAngle_TRAIN.npy,${DATALOC}/Y_test_100000_padMat_noSig_atlas_nsw_pad_z0_stgc20Max1_bkgr_1_CovAngle_TRAIN.npy"
-# DATA="${DATALOC}/X_test_10000_padMat_noSig.npy,${DATALOC}/Y_test_10000_padMat_noSig.npy"
-# DATA="${DATALOC}/X_test_10000_detMat_atlas_mm_vmm.npy,${DATALOC}/Y_test_10000_detMat_atlas_mm_vmm.npy"
+DATA="${DATALOC}/X_test_50000_detMat_atlas_nsw_pad_z0.npy,${DATALOC}/Y_test_50000_detMat_atlas_nsw_pad_z0.npy"
 
 OUTD=/gpfs/slac/atlas/fs1/d/rafaeltl/public/Muon/hls/
 
